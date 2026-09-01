@@ -27,6 +27,11 @@ spec:
         app.kubernetes.io/name: {{ .Values.cms.serviceName }}
         app.kubernetes.io/part-of: ssegning-com
     spec:
+      {{- if $.Values.imagePullSecret.enabled }}
+      # The GHCR packages are private (see templates/external-secrets.yaml).
+      imagePullSecrets:
+        - name: {{ $.Values.imagePullSecret.name }}
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001

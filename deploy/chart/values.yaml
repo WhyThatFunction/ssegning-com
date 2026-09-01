@@ -139,6 +139,17 @@ externalSecrets:
       - key: REVALIDATE_SECRET
         remoteProperty: revalidate_secret
 
+# Credential the kubelet uses to pull the two GHCR images. Needed because a
+# GHCR package published by CI is private by default even from a public repo,
+# and package visibility cannot be changed through any API -- see the long
+# comment in templates/external-secrets.yaml.
+imagePullSecret:
+  enabled: true
+  name: ghcr-pull
+  # Shared fleet credential (github_username / github_token), the same one the
+  # vaam-store and vymalo deployers pull ghcr.io with.
+  remoteKey: prod/meta/test-app
+
 certificate:
   secretName: ssegning-tls
   issuerName: cert-cloudflare
