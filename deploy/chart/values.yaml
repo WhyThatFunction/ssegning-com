@@ -73,12 +73,45 @@ postgres:
     limits:
       cpu: "1"
       memory: 1Gi
+
+# barman-cloud backups + WAL archival for the ssegning-pg CNPG Cluster (see
+# templates/postgres.yaml). Bucket/path/endpoint are non-secret config, kept
+# separate from the S3 credentials themselves (externalSecrets.backup below)
+# to mirror the existing convention in this file.
+backup:
+  enabled: true
+  endpoint: https://s3.ssegning.me
+  # Deliberately a DIFFERENT bucket than cms.env.s3Bucket (ssegning-uploads,
+  # public media). Backups contain full database dumps and must never sit
+  # in a world-readable bucket.
+  bucket: ssegning-cnpg-backups
+  path: /ssegning-prod
+  retention: 30d
+  # CNPG ScheduledBackup.spec.schedule is a SIX-field cron (seconds first),
+  # not the usual 5-field crontab — see the comment on this field in
+  # templates/postgres.yaml. Daily at 03:00.
+  schedule: "0 0 3 * * *"
+
 externalSecrets:
   enabled: true
   storeName: ssegning-aws
   storeKind: ClusterSecretStore
   remoteKey: ssegning/prod/env
   refreshInterval: 1h
+
+  # S3 credentials for the barman-cloud ObjectStore above. Deliberately
+  # reuses the SAME s3_access_key/s3_secret_key remote properties as the
+  # CMS's S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY mapping (externalSecrets.cms
+  # above) — it's the same MinIO user/access key at s3.ssegning.me, now also
+  # granted access to the private ssegning-cnpg-backups bucket in addition
+  # to the public ssegning-uploads media bucket. Materialized into its own
+  # Secret (not folded into an existing one) because barman-cloud's
+  # s3Credentials contract expects exactly `accessKeyId`/`secretKey` keys.
+  backup:
+    secretName: ssegning-cnpg-s3-creds
+    accessKeyRemoteProperty: s3_access_key
+    secretKeyRemoteProperty: s3_secret_key
+
   # Seeds the CNPG bootstrap owner role's password (see templates/postgres.yaml
   # bootstrap.initdb.secret) with a value from Secrets Manager rather than
   # CNPG's own auto-generated one, so the same password is knowable/rotatable

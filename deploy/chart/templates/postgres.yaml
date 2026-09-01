@@ -1,3 +1,6 @@
+{{- $pg := .Values.postgres -}}
+{{- $b := .Values.backup -}}
+{{- $es := .Values.externalSecrets -}}
 # CNPG Cluster for ssegning.com.
 #
 # instances: 1 (no streaming-replication standby) — this is a solo
@@ -7,24 +10,79 @@
 # storage.storageClass below) already protects against single-node disk
 # loss, which is the failure mode that matters most here. Revisit only if
 # this ever needs multi-AZ / near-zero-downtime guarantees.
+#
+# Backups (below) are the real durability story for this cluster, given the
+# single instance: barman-cloud WAL archival + nightly base backups to the
+# self-hosted MinIO at s3.ssegning.me are what actually protect against
+# something Longhorn replication doesn't cover — operator error, a bad
+# migration, or accidental data deletion.
+{{- if $b.enabled }}
+---
+# barman-cloud ObjectStore for CNPG backups + WAL archival. Points at the
+# self-hosted MinIO at s3.ssegning.me (path-style). This bucket
+# ({{ $b.bucket }}) is deliberately SEPARATE from the public
+# `ssegning-uploads` media bucket the CMS uses (see cms.*.s3Bucket in
+# values.yaml) — backups contain full database dumps and must never be
+# reachable through a world-readable bucket policy the way CMS media is.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: {{ $pg.name }}-object-store
+  namespace: {{ .Release.Namespace }}
+spec:
+  configuration:
+    destinationPath: s3://{{ $b.bucket }}{{ $b.path }}
+    endpointURL: {{ $b.endpoint | quote }}
+    s3Credentials:
+      accessKeyId:
+        name: {{ $es.backup.secretName }}
+        key: accessKeyId
+      secretAccessKey:
+        name: {{ $es.backup.secretName }}
+        key: secretKey
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  retentionPolicy: {{ $b.retention | quote }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ $pg.name }}-scheduled-backup
+  namespace: {{ .Release.Namespace }}
+spec:
+  cluster:
+    name: {{ $pg.name }}
+  # CNPG's ScheduledBackup.spec.schedule is a SIX-field cron — seconds
+  # first, then minute/hour/day/month/weekday (unlike a standard 5-field
+  # crontab). Getting the field count wrong is a silent no-op: CNPG parses
+  # it as a valid-looking but never-firing schedule rather than erroring,
+  # so there's no signal short of noticing backups never appear.
+  schedule: {{ $b.schedule | quote }}
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+{{- end }}
+---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: {{ .Values.postgres.name }}
+  name: {{ $pg.name }}
   namespace: {{ .Release.Namespace }}
 spec:
-  instances: {{ .Values.postgres.instances }}
+  instances: {{ $pg.instances }}
 
   # Patch-pinned tag, not a floating major/OS-flavour alias — see the
   # comment on this same key in values.yaml for how it was verified live
   # against GHCR before being pinned. A database engine version must never
   # change out from under a live cluster on an unrelated pod reschedule.
-  imageName: {{ .Values.postgres.imageName | quote }}
+  imageName: {{ $pg.imageName | quote }}
 
   bootstrap:
     initdb:
-      database: {{ .Values.postgres.database }}
-      owner: {{ .Values.postgres.owner }}
+      database: {{ $pg.database }}
+      owner: {{ $pg.owner }}
       # Filled in by the ssegning-pg-owner ExternalSecret (see
       # external-secrets.yaml), which runs as a Helm pre-install/pre-upgrade
       # hook so the Secret exists before this Cluster is applied.
@@ -32,8 +90,20 @@ spec:
         name: {{ .Values.externalSecrets.postgresOwner.secretName }}
 
   storage:
-    size: {{ .Values.postgres.storage.size }}
-    storageClass: {{ .Values.postgres.storage.storageClass }}
+    size: {{ $pg.storage.size }}
+    storageClass: {{ $pg.storage.storageClass }}
 
   resources:
-    {{- toYaml .Values.postgres.resources | nindent 4 }}
+    {{- toYaml $pg.resources | nindent 4 }}
+
+  {{- if $b.enabled }}
+  # isWALArchiver: true is what actually turns on continuous WAL shipping to
+  # the ObjectStore above — without it CNPG would only take the scheduled
+  # base backups and this single-instance cluster could still lose every
+  # write since the last nightly backup on a disk failure.
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: {{ $pg.name }}-object-store
+  {{- end }}

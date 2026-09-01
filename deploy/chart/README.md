@@ -39,6 +39,8 @@ env var this chart injects):
 | `admin_password`        | `ssegning-cms-secrets` → `ADMIN_PASSWORD`        | Strapi super-admin bootstrap |
 | `admin_firstname`       | `ssegning-cms-secrets` → `ADMIN_FIRSTNAME`       | Strapi super-admin bootstrap |
 | `admin_lastname`        | `ssegning-cms-secrets` → `ADMIN_LASTNAME`        | Strapi super-admin bootstrap |
+| `s3_access_key`         | `ssegning-cnpg-s3-creds` → `accessKeyId`         | barman-cloud backups (same MinIO access key as the CMS uploads, additionally granted access to the private `ssegning-cnpg-backups` bucket) |
+| `s3_secret_key`         | `ssegning-cnpg-s3-creds` → `secretKey`           | barman-cloud backups (same MinIO secret key as the CMS uploads) |
 
 The exact property→env-var mapping lives in `values.yaml` under
 `externalSecrets.cms.mappings` / `externalSecrets.web.mappings` /
@@ -61,14 +63,36 @@ if a new secret-backed env var is ever needed.
   `resources`. The CMS's `DATABASE_HOST` is derived as
   `<postgres.name>-rw` (CNPG's own naming convention for its read-write
   Service) rather than being a separate value.
+- **`backup.*`** — barman-cloud backups + continuous WAL archival for the
+  `postgres.*` Cluster, rendered by `templates/postgres.yaml` as a
+  `barmancloud.cnpg.io/v1` `ObjectStore` + a `ScheduledBackup` + the
+  Cluster's `spec.plugins` entry, all guarded by `backup.enabled`.
+  `endpoint` is the self-hosted MinIO (`https://s3.ssegning.me`,
+  path-style); `bucket`/`path` compose the `s3://` destination
+  (`s3://<bucket><path>`) — **`bucket` is deliberately a different,
+  private bucket (`ssegning-cnpg-backups`) from the public `cms.env.s3Bucket`
+  media bucket**, since backups must never be world-readable; `retention`
+  is barman-cloud's `retentionPolicy` (e.g. `30d`); `schedule` is the
+  `ScheduledBackup`'s cron — **CNPG uses a SIX-field cron (seconds first)**,
+  not the usual 5-field crontab, so `"0 0 3 * * *"` means daily at 03:00,
+  not hourly. The S3 credentials themselves live under
+  `externalSecrets.backup` (below), not here.
 - **`externalSecrets.*`** — `storeName`/`storeKind`/`remoteKey`/
-  `refreshInterval` shared by all three `ExternalSecret`s, plus
-  `postgresOwner`/`cms`/`web` (each with a `secretName` and either a fixed
-  `username`/`passwordRemoteProperty` pair or a `mappings` list of
-  `{key, remoteProperty}`). Adding a `mappings` entry is enough to add a new
-  secret-backed env var — `cms.yaml`/`web.yaml` range over these lists to
-  build both the container's `env` and the underlying `ExternalSecret`, so
-  the two can't drift apart.
+  `refreshInterval` shared by all `ExternalSecret`s, plus
+  `postgresOwner`/`cms`/`web`/`backup` (each with a `secretName` and either
+  a fixed `username`/`passwordRemoteProperty` pair, a `mappings` list of
+  `{key, remoteProperty}`, or — for `backup` — a fixed
+  `accessKeyId`/`secretKey` pair via `accessKeyRemoteProperty`/
+  `secretKeyRemoteProperty`, matching barman-cloud's `s3Credentials`
+  contract). Adding a `mappings` entry is enough to add a new secret-backed
+  env var — `cms.yaml`/`web.yaml` range over these lists to build both the
+  container's `env` and the underlying `ExternalSecret`, so the two can't
+  drift apart. `externalSecrets.backup` deliberately reuses the same
+  `s3_access_key`/`s3_secret_key` remote properties as `externalSecrets.cms`
+  — one MinIO user, now granted access to both the public uploads bucket
+  and the private backups bucket — materialized into its own
+  `ssegning-cnpg-s3-creds` Secret because barman-cloud expects exactly
+  `accessKeyId`/`secretKey` keys.
 - **`certificate.*`** — cert-manager `Certificate` `secretName`/
   `issuerName`/`issuerKind`/`dnsNames`. No `commonName` (see
   `templates/certificate.yaml`'s comment).
