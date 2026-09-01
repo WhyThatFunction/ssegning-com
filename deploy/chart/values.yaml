@@ -12,7 +12,7 @@
 web:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/web
-    tag: sha-3c7d6eb
+    tag: sha-2d33e15
     pullPolicy: IfNotPresent
   replicas: 2
   serviceName: ssegning-web
@@ -29,7 +29,6 @@ web:
     # the App Router's server components — safe to keep as a plain (non-
     # secret) value.
     nextPublicSiteUrl: https://ssegning.com
-
   # giscus — GitHub-Discussions-backed comments under each journal article.
   # Readers sign in with their own GitHub account; nothing is stored by us.
   #
@@ -61,7 +60,7 @@ web:
 cms:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/cms
-    tag: sha-3c7d6eb
+    tag: sha-2d33e15
     pullPolicy: IfNotPresent
   serviceName: ssegning-cms
   port: 1337
