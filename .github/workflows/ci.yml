@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: 11.24.0
+  NODE_VERSION: 22
+
+jobs:
+  lint:
+    name: Lint, format & smoke build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Biome (lint + format check)
+        run: pnpm exec biome ci .
+
+      - name: Smoke build apps/web
+        run: pnpm --filter @ssegning/web build
+
+  images:
+    name: Build & push image (${{ matrix.name }})
+    needs: lint
+    # Only build/push on an actual push to main or a manual dispatch — never
+    # for a pull_request — and never re-enter on the commit the `bump` job
+    # below makes back to main (the [skip ci] marker in that commit's
+    # message), so a bump push cannot re-trigger this job and loop forever.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' &&
+       !contains(github.event.head_commit.message, '[skip ci]'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    strategy:
+      matrix:
+        name: [web, cms]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # The org disables write permissions for GITHUB_TOKEN
+      # (`default_workflow_permissions: read`, enforced org-wide and NOT
+      # overridable per-repo -- PUTting it returns 409 "Write permissions for
+      # workflows are disabled by the organization"). So `packages: write`
+      # requested above can never actually be granted, and GITHUB_TOKEN cannot
+      # push to GHCR. CI_TOKEN is a repo secret holding the fleet PAT
+      # (scopes: repo, write:packages) -- the same credential the vaam-store
+      # and vymalo deployers already use for ghcr.io.
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CI_TOKEN }}
+
+      # Deployment (deploy/chart/values.yaml) pins the short-sha tag, so both
+      # `main` (floating, human-readable) and `sha-<7 chars>` (the one that
+      # actually gets deployed) are emitted for every build.
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/whythatfunction/ssegning-com/${{ matrix.name }}
+          tags: |
+            type=raw,value=main
+            type=sha,prefix=sha-,format=short
+
+      - name: Build & push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.name }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Report digest
+        run: |
+          echo "### ${{ matrix.name }} image" >> "$GITHUB_STEP_SUMMARY"
+          echo "digest: \`${{ steps.build.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  bump:
+    name: Bump deployed image tags
+    needs: images
+    # images already excludes PRs and bump-commit re-triggers; this only
+    # needs to additionally exclude workflow_dispatch, since a manual image
+    # rebuild shouldn't by itself move what's deployed.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Same reason as the GHCR login above: GITHUB_TOKEN is read-only
+      # org-wide, so the push at the end of this job needs CI_TOKEN. Passing
+      # it to checkout persists it as the origin credential for the later
+      # `git push`.
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.CI_TOKEN }}
+
+      - name: Sync with latest main
+        run: git pull --rebase origin main
+
+      - name: Verify yq is preinstalled
+        run: yq --version
+
+      - name: Compute short sha
+        id: sha
+        run: echo "short=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+      - name: Bump image tags in deploy/chart/values.yaml
+        env:
+          TAG: sha-${{ steps.sha.outputs.short }}
+        run: |
+          set -euo pipefail
+          yq -i ".web.image.tag = \"${TAG}\"" deploy/chart/values.yaml
+          yq -i ".cms.image.tag = \"${TAG}\"" deploy/chart/values.yaml
+
+      - name: Commit and push (skip if unchanged)
+        env:
+          TAG: sha-${{ steps.sha.outputs.short }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- deploy/chart/values.yaml; then
+            echo "Image tags already up to date, nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deploy/chart/values.yaml
+          git commit -m "chore(deploy): bump image tags to ${TAG} [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main

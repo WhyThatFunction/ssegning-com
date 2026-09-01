@@ -1,0 +1,150 @@
+# Strapi CMS Deployment + Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.cms.serviceName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.cms.serviceName }}
+    app.kubernetes.io/part-of: ssegning-com
+spec:
+  replicas: 1
+  # Recreate, not RollingUpdate: Strapi runs its schema sync/migrations at
+  # boot against the shared CNPG database, and this app has no locking
+  # story for two Strapi processes racing that against the same schema —
+  # a brief overlap between an old and a new pod during a RollingUpdate
+  # could do exactly that. With only 1 replica anyway, RollingUpdate buys
+  # no availability here, only risk, so Recreate (fully terminate the old
+  # pod, then start the new one) is strictly safer for this workload.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.cms.serviceName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.cms.serviceName }}
+        app.kubernetes.io/part-of: ssegning-com
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        # Required for the "restricted" PodSecurity level — confirmed
+        # against a live server-side dry run, which otherwise warns
+        # "must set securityContext.seccompProfile.type to RuntimeDefault".
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: cms
+          image: "{{ .Values.cms.image.repository }}:{{ .Values.cms.image.tag }}"
+          imagePullPolicy: {{ .Values.cms.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.cms.port }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            # NOT read-only: Strapi writes build/runtime scratch state under
+            # its own app directory (e.g. `.tmp`) at startup. The exact
+            # WORKDIR/output layout is owned by apps/cms's own Dockerfile
+            # (written concurrently elsewhere in this monorepo, not visible
+            # from here), so pinning a single emptyDir mount at a guessed
+            # path risks shadowing a directory the image actually expects
+            # pre-populated from the build. Leaving the whole root
+            # filesystem writable is the safe default until that path is
+            # confirmed; non-root + dropped capabilities still cover the
+            # security properties that matter most.
+            readOnlyRootFilesystem: false
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: {{ .Values.cms.port | quote }}
+            - name: DATABASE_CLIENT
+              value: postgres
+            # CNPG's own auto-created read-write Service is always named
+            # "<cluster-name>-rw" — derived from postgres.name so this
+            # can't drift from the Cluster's actual metadata.name.
+            - name: DATABASE_HOST
+              value: {{ printf "%s-rw" .Values.postgres.name | quote }}
+            - name: DATABASE_PORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: DATABASE_NAME
+              value: {{ .Values.postgres.database | quote }}
+            - name: DATABASE_USERNAME
+              value: {{ .Values.postgres.owner | quote }}
+            - name: DATABASE_SSL
+              value: "false"
+            - name: PUBLIC_URL
+              value: {{ .Values.cms.env.publicUrl | quote }}
+            - name: STRAPI_ADMIN_BACKEND_URL
+              value: {{ .Values.cms.env.adminBackendUrl | quote }}
+            - name: S3_ENDPOINT
+              value: {{ .Values.cms.env.s3Endpoint | quote }}
+            - name: S3_REGION
+              value: {{ .Values.cms.env.s3Region | quote }}
+            - name: S3_BUCKET
+              value: {{ .Values.cms.env.s3Bucket | quote }}
+            - name: S3_PUBLIC_BASE
+              value: {{ .Values.cms.env.s3PublicBase | quote }}
+            # web's Service + port, not a magic string — see values.yaml
+            # web.serviceName/web.port.
+            - name: WEB_REVALIDATE_URL
+              value: {{ printf "http://%s:%v/api/revalidate" .Values.web.serviceName .Values.web.port | quote }}
+            # Every secret-backed env var (APP_KEYS, ..., and the ADMIN_*
+            # super-admin bootstrap vars from CONTRACT.md ADDENDUM 1) comes
+            # straight from the externalSecrets.cms.mappings list in
+            # values.yaml, so this list can never drift from what the
+            # ssegning-cms-secrets ExternalSecret actually populates.
+            {{- range .Values.externalSecrets.cms.mappings }}
+            - name: {{ .key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.externalSecrets.cms.secretName }}
+                  key: {{ .key }}
+            {{- end }}
+          # Strapi is slow to boot (admin panel build/serve + DB migrations)
+          # — failureThreshold 60 * periodSeconds 5 gives it up to 5 minutes
+          # before being killed, while readiness/liveness stay on a normal
+          # cadence once it's up.
+          startupProbe:
+            httpGet:
+              path: /_health
+              port: http
+            failureThreshold: 60
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /_health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /_health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.cms.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cms.serviceName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.cms.serviceName }}
+    app.kubernetes.io/part-of: ssegning-com
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ .Values.cms.serviceName }}
+  ports:
+    - name: http
+      port: {{ .Values.cms.port }}
+      targetPort: http

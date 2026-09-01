@@ -1,0 +1,17 @@
+# Traefik Middleware: 301-redirect any host/scheme to the canonical apex.
+# Referenced by the ssegning-redirect Ingress's
+# traefik.ingress.kubernetes.io/router.middlewares annotation (see
+# ingress.yaml). `${1}` is a literal Traefik regexp-replacement token, not a
+# Helm/Go template action (it contains no double-curly-brace delimiters),
+# so Helm passes it through untouched; it's still quoted here so YAML never
+# has a chance to misparse the `$`.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ .Values.ingress.redirect.middlewareName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  redirectRegex:
+    regex: "^https?://[^/]+/(.*)"
+    replacement: "{{ .Values.ingress.redirect.targetUrl }}/${1}"
+    permanent: true

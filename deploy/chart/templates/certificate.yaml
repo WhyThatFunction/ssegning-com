@@ -1,0 +1,20 @@
+# NO commonName: Let's Encrypt (via the cert-cloudflare ClusterIssuer) no
+# longer emits a CN field on issued certs, and this cluster's own
+# convention (see other CNPG/ingress Certificates on this fleet) is to omit
+# it entirely rather than let it silently diverge from the SAN list. This
+# Certificate also has no wildcard name, so the "wildcard covers a listed
+# bare name" 400 that convention exists to avoid doesn't apply here anyway —
+# all five dnsNames are distinct, non-overlapping hostnames.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ssegning-tls
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretName: {{ .Values.certificate.secretName }}
+  issuerRef:
+    name: {{ .Values.certificate.issuerName }}
+    kind: {{ .Values.certificate.issuerKind }}
+    group: cert-manager.io
+  dnsNames:
+    {{- toYaml .Values.certificate.dnsNames | nindent 4 }}

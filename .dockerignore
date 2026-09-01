@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/dist
+**/build
+**/.strapi
+**/.tmp
+**/.git
+**/.env
+**/.env.*

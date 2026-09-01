@@ -1,0 +1,39 @@
+# CNPG Cluster for ssegning.com.
+#
+# instances: 1 (no streaming-replication standby) — this is a solo
+# consultancy site with modest, not-mission-critical traffic. A 3-instance
+# HA cluster would triple storage/compute cost for an availability win this
+# workload doesn't need; Longhorn's own volume replication (see
+# storage.storageClass below) already protects against single-node disk
+# loss, which is the failure mode that matters most here. Revisit only if
+# this ever needs multi-AZ / near-zero-downtime guarantees.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.postgres.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  instances: {{ .Values.postgres.instances }}
+
+  # Patch-pinned tag, not a floating major/OS-flavour alias — see the
+  # comment on this same key in values.yaml for how it was verified live
+  # against GHCR before being pinned. A database engine version must never
+  # change out from under a live cluster on an unrelated pod reschedule.
+  imageName: {{ .Values.postgres.imageName | quote }}
+
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgres.database }}
+      owner: {{ .Values.postgres.owner }}
+      # Filled in by the ssegning-pg-owner ExternalSecret (see
+      # external-secrets.yaml), which runs as a Helm pre-install/pre-upgrade
+      # hook so the Secret exists before this Cluster is applied.
+      secret:
+        name: {{ .Values.externalSecrets.postgresOwner.secretName }}
+
+  storage:
+    size: {{ .Values.postgres.storage.size }}
+    storageClass: {{ .Values.postgres.storage.storageClass }}
+
+  resources:
+    {{- toYaml .Values.postgres.resources | nindent 4 }}

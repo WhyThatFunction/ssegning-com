@@ -1,0 +1,25 @@
+{
+  "kind": "singleType",
+  "collectionName": "legal_pages",
+  "info": {
+    "singularName": "legal-page",
+    "pluralName": "legal-pages",
+    "displayName": "Legal Page",
+    "description": "Imprint, privacy policy and terms."
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "imprint": {
+      "type": "richtext"
+    },
+    "privacy": {
+      "type": "richtext"
+    },
+    "terms": {
+      "type": "richtext"
+    }
+  }
+}

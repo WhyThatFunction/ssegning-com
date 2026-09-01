@@ -1,0 +1,16 @@
+apiVersion: v2
+name: ssegning-com
+description: ssegning.com — Next.js web + Strapi CMS + CNPG Postgres, deployed by ArgoCD
+version: 0.1.0
+appVersion: "1.0.0"
+
+# Deliberately NO chart dependencies (e.g. the bjw-s `common` library).
+# Every resource this chart renders (Deployment, Service, Ingress, CNPG
+# Cluster, ExternalSecret, Certificate, Middleware) is simple and low-count
+# enough that hand-authored plain templates stay more readable and
+# debuggable than composing them through a generic library's value schema —
+# and it means `helm template`/`helm lint` work with zero setup (no
+# `helm dependency build`, no Chart.lock, no vendored .tgz to keep in sync
+# in CI). Revisit only if this chart's resource count grows enough that the
+# duplication of Deployment/Service boilerplate across web.yaml and cms.yaml
+# becomes the bigger maintenance cost.

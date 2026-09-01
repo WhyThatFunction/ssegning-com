@@ -1,0 +1,115 @@
+# Next.js web Deployment + Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.web.serviceName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.web.serviceName }}
+    app.kubernetes.io/part-of: ssegning-com
+spec:
+  replicas: {{ .Values.web.replicas }}
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.web.serviceName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.web.serviceName }}
+        app.kubernetes.io/part-of: ssegning-com
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        # Required for the "restricted" PodSecurity level — confirmed
+        # against a live server-side dry run, which otherwise warns
+        # "must set securityContext.seccompProfile.type to RuntimeDefault".
+        seccompProfile:
+          type: RuntimeDefault
+      # Spread the 2 replicas across distinct nodes when possible, but never
+      # block scheduling over it (ScheduleAnyway) — this is a 4-node
+      # cluster shared with everything else in the fleet, and best-effort
+      # spread is worth more than a Pending pod when the preferred layout
+      # isn't available.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.web.serviceName }}
+      containers:
+        - name: web
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.web.port }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            # readOnlyRootFilesystem is deliberately FALSE, not true+/tmp
+            # emptyDir. Next.js's standalone server writes its ISR/
+            # on-demand-revalidation cache (exactly the feature
+            # REVALIDATE_SECRET exists for) to `.next/cache` relative to
+            # the app's own working directory, not to a fixed OS temp path —
+            # a `/tmp` emptyDir alone would not cover it, and the actual
+            # WORKDIR/output layout is owned by apps/web's own Dockerfile
+            # (written concurrently elsewhere in this monorepo, not visible
+            # from here). Forcing read-only root without confirming that
+            # path risks silent revalidate failures that are hard to
+            # detect. Non-root + dropped capabilities still cover the
+            # security properties that matter most; revisit once the
+            # image's cache path is confirmed.
+            readOnlyRootFilesystem: false
+          env:
+            - name: STRAPI_URL
+              value: {{ printf "http://%s:%v" .Values.cms.serviceName .Values.cms.port | quote }}
+            - name: NEXT_PUBLIC_SITE_URL
+              value: {{ .Values.web.env.nextPublicSiteUrl | quote }}
+            {{- range .Values.externalSecrets.web.mappings }}
+            - name: {{ .key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.externalSecrets.web.secretName }}
+                  key: {{ .key }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.web.serviceName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.web.serviceName }}
+    app.kubernetes.io/part-of: ssegning-com
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ .Values.web.serviceName }}
+  ports:
+    - name: http
+      port: {{ .Values.web.port }}
+      targetPort: http

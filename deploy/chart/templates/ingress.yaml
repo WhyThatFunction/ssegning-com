@@ -1,0 +1,95 @@
+---
+# Apex Ingress — ssegning.com only. Deliberately does NOT also list
+# www.ssegning.com as a host here (see values.yaml ingress.redirect's
+# comment): www is handled exclusively by the ssegning-redirect Ingress
+# below so there is only ever one Ingress object declaring a router for any
+# given hostname.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.web.serviceName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.web.serviceName }}
+    app.kubernetes.io/part-of: ssegning-com
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - secretName: {{ .Values.ingress.tlsSecretName }}
+      hosts:
+        - {{ .Values.ingress.web.host }}
+  rules:
+    - host: {{ .Values.ingress.web.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.web.serviceName }}
+                port:
+                  number: {{ .Values.web.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.cms.serviceName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.cms.serviceName }}
+    app.kubernetes.io/part-of: ssegning-com
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - secretName: {{ .Values.ingress.tlsSecretName }}
+      hosts:
+        - {{ .Values.ingress.cms.host }}
+  rules:
+    - host: {{ .Values.ingress.cms.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.cms.serviceName }}
+                port:
+                  number: {{ .Values.cms.port }}
+---
+# Redirect Ingress — www.ssegning.com, god.ssegning.com, apps.ssegning.com
+# all 301 to the apex via the redirect-to-apex Middleware (middleware.yaml).
+# A real backend Service is still required even though the middleware
+# short-circuits every request before it would ever reach it: Kubernetes'
+# Ingress schema has no "middleware-only, no backend" shape, and Traefik
+# itself refuses to build a router with no default backend at all. Pointing
+# it at ssegning-web is arbitrary (it's never actually invoked) but keeps
+# this Ingress self-contained rather than inventing a dummy Service.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ssegning-redirect
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: ssegning-redirect
+    app.kubernetes.io/part-of: ssegning-com
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: "{{ .Release.Namespace }}-{{ .Values.ingress.redirect.middlewareName }}@kubernetescrd"
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - secretName: {{ .Values.ingress.tlsSecretName }}
+      hosts:
+        {{- toYaml .Values.ingress.redirect.hosts | nindent 8 }}
+  rules:
+    {{- range .Values.ingress.redirect.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Values.web.serviceName }}
+                port:
+                  number: {{ $.Values.web.port }}
+    {{- end }}

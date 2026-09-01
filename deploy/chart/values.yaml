@@ -1,0 +1,178 @@
+# ssegning.com — Helm chart values.
+#
+# Deployed by ArgoCD onto the Talos in-cluster destination
+# (server: https://kubernetes.default.svc), namespace `ssegning` (created by
+# the ArgoCD Application, not by this chart). See README.md for a full
+# breakdown of every key below and the exact AWS Secrets Manager properties
+# this chart expects to exist under `ssegning/prod/env`.
+#
+# CI rewrites `.web.image.tag` and `.cms.image.tag` with `yq` on every
+# deploy — keep those two paths as plain scalars.
+
+web:
+  image:
+    repository: ghcr.io/whythatfunction/ssegning-com/web
+    tag: main
+    pullPolicy: IfNotPresent
+  replicas: 2
+  serviceName: ssegning-web
+  port: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+  env:
+    # NEXT_PUBLIC_SITE_URL is baked into client bundles at request time via
+    # the App Router's server components — safe to keep as a plain (non-
+    # secret) value.
+    nextPublicSiteUrl: https://ssegning.com
+
+cms:
+  image:
+    repository: ghcr.io/whythatfunction/ssegning-com/cms
+    tag: main
+    pullPolicy: IfNotPresent
+  serviceName: ssegning-cms
+  port: 1337
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1.5Gi
+  env:
+    publicUrl: https://cms.ssegning.com
+    adminBackendUrl: https://cms.ssegning.com
+    s3Endpoint: https://s3.ssegning.me
+    s3Region: us-east-1
+    s3Bucket: ssegning-uploads
+    s3PublicBase: https://s3.ssegning.me/ssegning-uploads
+
+postgres:
+  name: ssegning-pg
+  instances: 1
+  # Patch-pinned, not a floating major/OS-flavour tag, so a routine pod
+  # restart never silently pulls a newer Postgres minor onto a live
+  # database. Verified live against
+  # https://ghcr.io/v2/cloudnative-pg/postgresql/manifests/18.1-system-trixie
+  # (200 OK, multi-arch OCI image index) before pinning; the identical tag
+  # already runs in production for keycloak-ha on this same cluster.
+  imageName: "ghcr.io/cloudnative-pg/postgresql:18.1-system-trixie"
+  database: ssegning
+  owner: ssegning
+  port: 5432
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+externalSecrets:
+  enabled: true
+  storeName: ssegning-aws
+  storeKind: ClusterSecretStore
+  remoteKey: ssegning/prod/env
+  refreshInterval: 1h
+
+  # Seeds the CNPG bootstrap owner role's password (see templates/postgres.yaml
+  # bootstrap.initdb.secret) with a value from Secrets Manager rather than
+  # CNPG's own auto-generated one, so the same password is knowable/rotatable
+  # from one place and reusable by the CMS's DATABASE_PASSWORD.
+  postgresOwner:
+    secretName: ssegning-pg-owner
+    username: ssegning
+    passwordRemoteProperty: postgres_password
+
+  # Strapi (CMS) runtime secrets. `remoteProperty` is the exact property
+  # name under the `ssegning/prod/env` secret in AWS Secrets Manager.
+  cms:
+    secretName: ssegning-cms-secrets
+    mappings:
+      - key: APP_KEYS
+        remoteProperty: strapi_app_keys
+      - key: API_TOKEN_SALT
+        remoteProperty: strapi_api_token_salt
+      - key: ADMIN_JWT_SECRET
+        remoteProperty: strapi_admin_jwt_secret
+      - key: TRANSFER_TOKEN_SALT
+        remoteProperty: strapi_transfer_token_salt
+      - key: JWT_SECRET
+        remoteProperty: strapi_jwt_secret
+      - key: ENCRYPTION_KEY
+        remoteProperty: strapi_encryption_key
+      - key: S3_ACCESS_KEY_ID
+        remoteProperty: s3_access_key
+      - key: S3_SECRET_ACCESS_KEY
+        remoteProperty: s3_secret_key
+      - key: WEB_REVALIDATE_SECRET
+        remoteProperty: revalidate_secret
+      - key: DATABASE_PASSWORD
+        remoteProperty: postgres_password
+      # Super-admin bootstrap (CONTRACT.md ADDENDUM 1). apps/cms creates
+      # exactly one Strapi super admin from these on first boot (when
+      # admin::user count is 0), closing the open-registration window that
+      # would otherwise let the first visitor to /admin claim the instance.
+      - key: ADMIN_EMAIL
+        remoteProperty: admin_email
+      - key: ADMIN_PASSWORD
+        remoteProperty: admin_password
+      - key: ADMIN_FIRSTNAME
+        remoteProperty: admin_firstname
+      - key: ADMIN_LASTNAME
+        remoteProperty: admin_lastname
+
+  # Next.js (web) runtime secret. Must equal the CMS's WEB_REVALIDATE_SECRET
+  # (both map from the same `revalidate_secret` remote property) — the web
+  # app's /api/revalidate route checks incoming requests against this value.
+  web:
+    secretName: ssegning-web-secrets
+    mappings:
+      - key: REVALIDATE_SECRET
+        remoteProperty: revalidate_secret
+
+certificate:
+  secretName: ssegning-tls
+  issuerName: cert-cloudflare
+  issuerKind: ClusterIssuer
+  # No wildcard requested for this domain, so no dnsNames pruning needed
+  # (see the "wildcard-only, no commonName" convention used elsewhere on
+  # this cluster — that rule exists to stop Let's Encrypt 400ing an order
+  # where a name is redundant with a wildcard in the same request; none of
+  # these five names overlap that way).
+  dnsNames:
+    - ssegning.com
+    - www.ssegning.com
+    - cms.ssegning.com
+    - god.ssegning.com
+    - apps.ssegning.com
+
+ingress:
+  className: traefik
+  tlsSecretName: ssegning-tls
+  web:
+    host: ssegning.com
+  cms:
+    host: cms.ssegning.com
+  # Hosts that 301-redirect to the apex via the redirect-to-apex Middleware.
+  # www.ssegning.com is deliberately NOT also listed as a host on
+  # `ingress.web` above — Traefik would then have two Ingress objects
+  # declaring an identical Host+PathPrefix router for the same hostname
+  # (one plain, one middleware-wrapped), which is an undefined-priority
+  # collision, not a "last one wins." Keeping www exclusively here is what
+  # actually makes the apex Ingress "clean."
+  redirect:
+    hosts:
+      - www.ssegning.com
+      - god.ssegning.com
+      - apps.ssegning.com
+    targetUrl: https://ssegning.com
+    middlewareName: redirect-to-apex

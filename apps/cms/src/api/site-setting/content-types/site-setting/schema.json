@@ -1,0 +1,44 @@
+{
+  "kind": "singleType",
+  "collectionName": "site_settings",
+  "info": {
+    "singularName": "site-setting",
+    "pluralName": "site-settings",
+    "displayName": "Site Setting",
+    "description": "Global site configuration: name, navigation, footer, socials."
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "siteName": {
+      "type": "string",
+      "required": true
+    },
+    "tagline": {
+      "type": "string"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "navLinks": {
+      "type": "component",
+      "component": "shared.link",
+      "repeatable": true
+    },
+    "footerNote": {
+      "type": "text"
+    },
+    "metaDescription": {
+      "type": "text"
+    },
+    "socials": {
+      "type": "component",
+      "component": "shared.social",
+      "repeatable": true
+    }
+  }
+}

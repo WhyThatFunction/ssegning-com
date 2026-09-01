@@ -1,0 +1,47 @@
+packages:
+  - 'apps/*'
+allowBuilds:
+  '@swc/core': true
+  core-js-pure: true
+  esbuild: true
+
+# pnpm 11 refuses, by default, to install any package published within the
+# last 24h (`minimumReleaseAge`) — a supply-chain guard against a freshly
+# compromised release. It fires on RESOLUTION, which includes
+# `pnpm install --frozen-lockfile` inside a Docker build and in CI, so
+# without this list every image build fails until the packages age out.
+#
+# These are the exact versions this project deliberately took while they
+# were still new (Next.js 16.3.4 and its platform binaries, lucide-react
+# 1.38.0). Pinning them here is the mechanism pnpm provides for exactly
+# this case: an explicit, auditable allowlist of vetted versions, rather
+# than disabling the policy wholesale with `minimumReleaseAge: 0`.
+#
+# Safe to delete any entry once that version is more than 24h old — the
+# policy then passes it on its own. Do NOT add to this list casually.
+minimumReleaseAgeExclude:
+  - '@next/env@16.3.4'
+  - '@next/swc-darwin-arm64@16.3.4'
+  - '@next/swc-darwin-x64@16.3.4'
+  - '@next/swc-linux-arm64-gnu@16.3.4'
+  - '@next/swc-linux-arm64-musl@16.3.4'
+  - '@next/swc-linux-x64-gnu@16.3.4'
+  - '@next/swc-linux-x64-musl@16.3.4'
+  - '@next/swc-win32-arm64-msvc@16.3.4'
+  - '@next/swc-win32-x64-msvc@16.3.4'
+  - next@16.3.4
+  - lucide-react@1.38.0
+
+# Strapi's admin dependency tree (radix-ui, emotion, react-select ...) drags
+# in @types/react@18 as a transitive peer, while apps/web is on React 19.
+# Two copies of @types/react in one workspace makes `ReactNode` from one
+# non-assignable to `ReactNode` from the other, and `next build`'s type
+# check fails inside the Docker image on exactly that
+# ("Property 'children' is missing ... but required in type 'ReactPortal'"
+# — the React 18 ReactPortal signature). Collapsing to one version fixes it
+# at the root. Safe for apps/cms: it has no React or TSX source of its own
+# (its `tsc` only covers src/**), and `strapi build` bundles the admin panel
+# with vite, which does not type-check node_modules.
+overrides:
+  '@types/react': 19.2.18
+  '@types/react-dom': 19.2.5
