@@ -12,7 +12,7 @@
 web:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/web
-    tag: main
+    tag: sha-d77aacd
     pullPolicy: IfNotPresent
   replicas: 2
   serviceName: ssegning-web
@@ -29,11 +29,10 @@ web:
     # the App Router's server components — safe to keep as a plain (non-
     # secret) value.
     nextPublicSiteUrl: https://ssegning.com
-
 cms:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/cms
-    tag: main
+    tag: sha-d77aacd
     pullPolicy: IfNotPresent
   serviceName: ssegning-cms
   port: 1337
@@ -51,7 +50,6 @@ cms:
     s3Region: us-east-1
     s3Bucket: ssegning-uploads
     s3PublicBase: https://s3.ssegning.me/ssegning-uploads
-
 postgres:
   name: ssegning-pg
   instances: 1
@@ -75,14 +73,12 @@ postgres:
     limits:
       cpu: "1"
       memory: 1Gi
-
 externalSecrets:
   enabled: true
   storeName: ssegning-aws
   storeKind: ClusterSecretStore
   remoteKey: ssegning/prod/env
   refreshInterval: 1h
-
   # Seeds the CNPG bootstrap owner role's password (see templates/postgres.yaml
   # bootstrap.initdb.secret) with a value from Secrets Manager rather than
   # CNPG's own auto-generated one, so the same password is knowable/rotatable
@@ -91,7 +87,6 @@ externalSecrets:
     secretName: ssegning-pg-owner
     username: ssegning
     passwordRemoteProperty: postgres_password
-
   # Strapi (CMS) runtime secrets. `remoteProperty` is the exact property
   # name under the `ssegning/prod/env` secret in AWS Secrets Manager.
   cms:
@@ -129,7 +124,6 @@ externalSecrets:
         remoteProperty: admin_firstname
       - key: ADMIN_LASTNAME
         remoteProperty: admin_lastname
-
   # Next.js (web) runtime secret. Must equal the CMS's WEB_REVALIDATE_SECRET
   # (both map from the same `revalidate_secret` remote property) — the web
   # app's /api/revalidate route checks incoming requests against this value.
@@ -138,7 +132,6 @@ externalSecrets:
     mappings:
       - key: REVALIDATE_SECRET
         remoteProperty: revalidate_secret
-
 # Credential the kubelet uses to pull the two GHCR images. Needed because a
 # GHCR package published by CI is private by default even from a public repo,
 # and package visibility cannot be changed through any API -- see the long
@@ -149,7 +142,6 @@ imagePullSecret:
   # Shared fleet credential (github_username / github_token), the same one the
   # vaam-store and vymalo deployers pull ghcr.io with.
   remoteKey: prod/meta/test-app
-
 certificate:
   secretName: ssegning-tls
   issuerName: cert-cloudflare
@@ -165,7 +157,6 @@ certificate:
     - cms.ssegning.com
     - god.ssegning.com
     - apps.ssegning.com
-
 ingress:
   className: traefik
   tlsSecretName: ssegning-tls
