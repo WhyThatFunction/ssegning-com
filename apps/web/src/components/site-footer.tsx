@@ -4,7 +4,11 @@ import { Container } from '@/components/container';
 import { SocialLinks } from '@/components/social-links';
 import type { SiteSetting } from '@/lib/types';
 
-const legalLinks = [
+// Hard-coded (not CMS-driven, unlike the header's siteSetting.navLinks) —
+// /branding is a reference page, not a top-level destination, so it lives
+// here rather than in the primary nav.
+const footerLinks = [
+  { href: '/branding', label: 'Branding' },
   { href: '/legal/imprint', label: 'Imprint' },
   { href: '/legal/privacy', label: 'Privacy' },
   { href: '/legal/terms', label: 'Terms' },
@@ -31,7 +35,7 @@ export function SiteFooter({ siteSetting }: { siteSetting: SiteSetting }) {
             © {year} {siteSetting.siteName}
           </p>
           <ul className="flex items-center gap-5">
-            {legalLinks.map((link) => (
+            {footerLinks.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="hover:text-ink">
                   {link.label}

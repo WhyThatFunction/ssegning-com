@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { BrandLockup } from '@/components/brand-lockup';
 import { Container } from '@/components/container';
 import { MobileNav } from '@/components/mobile-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -9,8 +10,8 @@ export function SiteHeader({ siteSetting }: { siteSetting: SiteSetting }) {
   return (
     <header className="relative border-b border-border bg-canvas">
       <Container wide className="flex h-16 items-center justify-between">
-        <Link href="/" className="font-mono text-sm font-medium tracking-tight text-ink">
-          {siteSetting.siteName}
+        <Link href="/" className="text-ink">
+          <BrandLockup label={siteSetting.siteName} size={20} />
         </Link>
 
         <nav aria-label="Primary" className="hidden md:block">

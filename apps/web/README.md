@@ -38,6 +38,15 @@ pointed at nothing to develop entirely against the fallback content.
 | `STRAPI_URL` | yes (server-side) | Base URL of the Strapi CMS, e.g. `http://ssegning-cms:1337` in-cluster. Every fetch fails soft to `null`/`[]` if this is unset, unreachable, or times out (8s), so the site still renders. |
 | `NEXT_PUBLIC_SITE_URL` | yes | Canonical public origin, e.g. `https://ssegning.com`. Used for metadata, `sitemap.xml`, and `robots.txt`. |
 | `REVALIDATE_SECRET` | yes | Shared secret checked against the `x-revalidate-secret` header on `POST /api/revalidate`. Must equal the CMS's `WEB_REVALIDATE_SECRET`. |
+| `GISCUS_REPO` | no | `owner/repo` hosting the comment Discussions, e.g. `WhyThatFunction/ssegning-com`. Read server-side in `app/journal/[slug]/page.tsx`. |
+| `GISCUS_REPO_ID` | no | That repo's GraphQL node ID. |
+| `GISCUS_CATEGORY` | no | Discussion category name to post comments into, e.g. `Announcements`. |
+| `GISCUS_CATEGORY_ID` | no | That category's GraphQL node ID. |
+
+The four giscus variables are deliberately **not** `NEXT_PUBLIC_*` even
+though giscus's own config values aren't secret — see "Comments" below for
+why that distinction matters a lot in this app's build/deploy split. Leave
+all four unset to build and run with comments disabled.
 
 See `.env.example` for a ready-to-copy template.
 
@@ -53,6 +62,65 @@ a blank screen.
 
 `GET /api/healthz` never touches Strapi — it only reports this app's own
 liveness.
+
+## Comments
+
+Journal articles have a comment thread powered by
+[giscus](https://giscus.app) — comments are stored as GitHub Discussions on
+the `WhyThatFunction/ssegning-com` repo, and readers sign in with their
+existing GitHub account. There is no backend, no database, and no PII
+stored by this app.
+
+**Why the four `GISCUS_*` env vars are plain vars, not `NEXT_PUBLIC_*` —
+read this before renaming them.** `src/components/comments.tsx` is a client
+component, but it takes its config as **props**, not `process.env` reads.
+`app/journal/[slug]/page.tsx` (a Server Component) reads the four `GISCUS_*`
+vars from `process.env` at request time and passes them down. This matters
+because of how this app is built and deployed: the Docker image is built in
+CI, which has no giscus config, and the real values are only supplied later
+as plain env vars on the Kubernetes Deployment. A `NEXT_PUBLIC_*` variable
+gets inlined into the client JS bundle at *build* time — if these were
+`NEXT_PUBLIC_GISCUS_*`, they'd be baked in as `undefined` forever and
+comments would silently never render in production, no matter what the
+cluster's Deployment sets. Plain vars read server-side pick up a Deployment
+env change on the next pod restart, no rebuild required. **Do not rename
+these back to `NEXT_PUBLIC_GISCUS_*`** — that reintroduces exactly this bug.
+
+`comments.tsx` renders nothing at all (no console error, no layout gap)
+when any of the four props is missing, which is the default state of a
+fresh checkout or a cluster without the env vars set.
+
+Discussions are already enabled on the repo and the category already
+exists (see the real values in `.env.example` / the table above), so
+**the only remaining step needs a human with admin rights on the repo**:
+
+1. **(human)** Install the **[giscus GitHub App](https://github.com/apps/giscus)**
+   on `WhyThatFunction/ssegning-com`. Without this, giscus cannot open
+   Discussions on the repo's behalf, and the widget shows a
+   "giscus is not installed on this repository" error instead of the
+   comment thread.
+2. Set the four `GISCUS_*` values from `.env.example` on the target
+   environment (`.env.local` for local dev, the Deployment's env for prod)
+   and (re)start the app — no rebuild needed for a prod env-var change,
+   since these are read server-side at request time, not baked in at build
+   time.
+
+If a repo, or its category, ever needs to change: open
+[giscus.app](https://giscus.app), enter the repo, and once it detects
+Discussions are enabled and the giscus app is installed it reveals a
+generated `<script>` snippet — copy `data-repo`/`data-repo-id`/
+`data-category`/`data-category-id` out of that into `GISCUS_REPO`/
+`GISCUS_REPO_ID`/`GISCUS_CATEGORY`/`GISCUS_CATEGORY_ID`. The category
+should stay an **Announcement**-type category (locked, so only maintainers
+can start a new discussion — giscus's own recommendation, since it means
+every thread is one giscus itself created for an article, not one a
+visitor opened directly).
+
+Theme: the widget follows the site's light/dark theme (see
+`src/components/theme-toggle.tsx`) on load, and is re-synced live via
+giscus's `postMessage` API whenever the visitor toggles the theme or their
+OS-level scheme changes — the giscus iframe does not otherwise notice either
+kind of change on its own.
 
 ## Notes on the font choice
 

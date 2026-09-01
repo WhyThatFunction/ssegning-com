@@ -29,6 +29,35 @@ web:
     # the App Router's server components — safe to keep as a plain (non-
     # secret) value.
     nextPublicSiteUrl: https://ssegning.com
+
+  # giscus — GitHub-Discussions-backed comments under each journal article.
+  # Readers sign in with their own GitHub account; nothing is stored by us.
+  #
+  # These are read SERVER-SIDE by the article page and passed to the client
+  # component as props, which is why they are NOT named `NEXT_PUBLIC_*`.
+  # A `NEXT_PUBLIC_` variable is inlined by Next.js at BUILD time, and these
+  # images are built in CI with no giscus config — so a NEXT_PUBLIC name
+  # would be permanently baked as `undefined` and no amount of Deployment
+  # env here could ever switch comments on. Read at request time by a server
+  # component, a change here takes effect on a pod restart, no rebuild.
+  #
+  # None of these are secrets: they are the public identifiers giscus's own
+  # configurator hands out, and they end up in the page's script tag anyway.
+  #
+  # `Announcements` is giscus's recommended category type — only maintainers
+  # can open discussions there, so every thread is created by the app rather
+  # than by a reader.
+  #
+  # STILL REQUIRES ONE HUMAN STEP: the giscus GitHub App must be installed on
+  # WhyThatFunction/ssegning-com (https://github.com/apps/giscus). Until then
+  # the widget renders but reports "giscus is not installed on this
+  # repository". The page itself degrades cleanly either way.
+  giscus:
+    enabled: true
+    repo: WhyThatFunction/ssegning-com
+    repoId: R_kgDOUKZKdQ
+    category: Announcements
+    categoryId: DIC_kwDOUKZKdc4DEoBK
 cms:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/cms

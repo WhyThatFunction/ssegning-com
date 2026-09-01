@@ -41,9 +41,10 @@ export async function seed(strapi: Core.Strapi): Promise<void> {
       metaDescription:
         'Stephane Segning Lambou is an independent software and platform engineer based in Germany, specializing in Kubernetes platforms, backend systems in Rust and TypeScript, and cloud cost control for teams that need senior technical judgement without a full-time hire.',
       socials: [
-        { platform: 'github', url: 'https://github.com/ssegning' },
+        { platform: 'github', url: 'https://github.com/stephane-segning' },
+        // Confirmed correct by the author.
         { platform: 'linkedin', url: 'https://www.linkedin.com/in/ssegning' },
-        { platform: 'mastodon', url: 'https://hachyderm.io/@ssegning' },
+        // Unverified placeholder — author should confirm before relying on it.
         { platform: 'email', url: 'mailto:hello@ssegning.com' },
       ],
     },
@@ -288,41 +289,8 @@ export async function seed(strapi: Core.Strapi): Promise<void> {
     });
   }
 
-  const posts = [
-    {
-      title: 'Why I Run Talos Instead of a Managed Kubernetes Service',
-      slug: 'why-talos-instead-of-managed-kubernetes',
-      excerpt:
-        'Managed Kubernetes trades operational control for convenience. For some workloads, that trade is exactly backwards.',
-      body: "Managed Kubernetes services exist to remove a specific kind of pain: you no longer have to think about the control plane, node provisioning follows a documented API, and upgrades are, in theory, someone else's problem. For a lot of teams, that trade is the right one. But it's not free — you inherit the provider's upgrade cadence, their networking assumptions, and often their pricing model for anything beyond the default node pool, and when something goes wrong at the OS layer, you're debugging through a support ticket instead of a shell.\n\nTalos Linux takes a different approach: there is no shell. The entire OS is managed through a typed API, immutable and minimal by design, which removes an enormous surface area of configuration drift — the kind where a node quietly diverges from its siblings after eighteen months of ad hoc fixes nobody wrote down. Combined with GitOps, this means the actual state of a cluster is always derivable from a git history, not from institutional memory about what someone SSH'd into a box to fix in 2022.\n\nFor self-hosted and cost-sensitive workloads especially, this combination gives you most of the operational safety of a managed service, with none of the vendor lock-in, and a cost profile that scales with hardware rather than a per-node management fee.",
-      readingMinutes: 6,
-      seo: {
-        metaTitle: 'Why I Run Talos Instead of a Managed Kubernetes Service',
-        metaDescription:
-          'A look at why immutable, API-managed Talos Linux beats managed Kubernetes for cost-sensitive and self-hosted workloads.',
-      },
-    },
-    {
-      title: 'The Fractional CTO Playbook: What Founders Actually Need in the First 90 Days',
-      slug: 'fractional-cto-playbook-first-90-days',
-      excerpt:
-        'Most fractional CTO engagements start with the wrong question. Here is the one that actually matters in the first 90 days.',
-      body: "Founders usually bring in a fractional CTO with a specific technical worry — the architecture feels shaky, a senior hire didn't work out, or the board is asking questions about technical risk nobody can answer confidently. The instinct is to start there, diving straight into the codebase or the infrastructure. In practice, the first 90 days go better when you start somewhere less obvious: understanding what decisions the founding team is actually equipped to make on their own, and which ones they've been making by default because no one told them there was a choice.\n\nThat distinction changes the whole engagement. If the team can make good architectural decisions but lacks a forcing function to slow down and make them deliberately, the job is process — lightweight design reviews, a habit of writing decisions down, a hiring bar that doesn't erode under pressure. If the gap is genuinely technical judgement, the job looks different: hands-on architecture work, direct involvement in senior hiring, and a clear technical roadmap the team can execute once the engagement ends.\n\nEither way, the measure of a good first 90 days isn't how many decisions you made for the team — it's how much better equipped they are to make the next one without you.",
-      readingMinutes: 5,
-      seo: {
-        metaTitle: 'The Fractional CTO Playbook: The First 90 Days',
-        metaDescription:
-          'What a fractional CTO should actually focus on in the first 90 days of an engagement, and why it is rarely the technical problem you were hired for.',
-      },
-    },
-  ];
-
-  for (const post of posts) {
-    await strapi.documents('api::post.post').create({
-      status: 'published',
-      data: post,
-    });
-  }
+  // Journal posts are no longer fabricated here — the author's own real
+  // articles are published by `bootstrap/articles.ts` instead.
 
   strapi.log.info('[bootstrap/seed] seed complete');
 }

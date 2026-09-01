@@ -76,6 +76,19 @@ spec:
           env:
             - name: STRAPI_URL
               value: {{ printf "http://%s:%v" .Values.cms.serviceName .Values.cms.port | quote }}
+            {{- if .Values.web.giscus.enabled }}
+            # Read by the article page (a Server Component) at REQUEST time
+            # and passed to the client comment widget as props — see the long
+            # note in values.yaml for why these are not NEXT_PUBLIC_*.
+            - name: GISCUS_REPO
+              value: {{ .Values.web.giscus.repo | quote }}
+            - name: GISCUS_REPO_ID
+              value: {{ .Values.web.giscus.repoId | quote }}
+            - name: GISCUS_CATEGORY
+              value: {{ .Values.web.giscus.category | quote }}
+            - name: GISCUS_CATEGORY_ID
+              value: {{ .Values.web.giscus.categoryId | quote }}
+            {{- end }}
             - name: NEXT_PUBLIC_SITE_URL
               value: {{ .Values.web.env.nextPublicSiteUrl | quote }}
             {{- range .Values.externalSecrets.web.mappings }}

@@ -219,3 +219,20 @@ body {
   border: none;
   border-top: 1px solid var(--color-border);
 }
+
+/* Mermaid diagrams (see components/mermaid-diagram.tsx). The canvas scrolls
+   horizontally on its own so a wide flowchart/sequence diagram never forces
+   the page body itself to scroll sideways. */
+.mermaid-diagram-canvas {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-canvas-subtle);
+  padding: 1.5rem 1rem;
+}
+
+.mermaid-diagram-canvas svg {
+  display: block;
+  margin-inline: auto;
+  height: auto;
+}

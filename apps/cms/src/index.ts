@@ -1,5 +1,6 @@
 import type { Core } from '@strapi/strapi';
 import { createSuperAdminIfMissing } from './bootstrap/admin-user';
+import { publishBundledArticles } from './bootstrap/articles';
 import { setPublicPermissions } from './bootstrap/permissions';
 import { seed } from './bootstrap/seed';
 
@@ -24,5 +25,6 @@ export default {
     await createSuperAdminIfMissing(strapi);
     await setPublicPermissions(strapi, PUBLIC_CONTENT_TYPES);
     await seed(strapi);
+    await publishBundledArticles(strapi);
   },
 };

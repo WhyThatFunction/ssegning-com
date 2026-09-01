@@ -128,3 +128,121 @@ Motion: 150ms ease-out for hover/focus transitions only; instantly disabled
 - Used screens for concrete patterns: yes — grid/list index and metadata-
   before-body detail structure.
 - Rejected warm/cream/serif/indigo defaults: yes, explicitly in "Reject" above.
+
+## Brand mark
+
+Added when building `/branding` and wiring the mark into site identity
+(header, favicon, OG image). Read this before touching
+`brand-mark.tsx`/`brand-lockup.tsx` or the `/branding` page.
+
+### Research
+
+- Styles reviewed for visual taste (via `refero_search_styles`): LogoArchive,
+  Elementor, Hashnode, iconwerk, Ghost, shadcn/ui — reconfirming the existing
+  monochrome-plus-one-accent language rather than introducing a new one for
+  the mark.
+- Screens reviewed for concrete brand-guideline-page structure (via
+  `refero_search_screens`, full pulls via `refero_get_screen`): **Linear
+  Brand Guidelines** (`linear.app/brand`) — wordmark/logo/icon shown as
+  three-card rows per color variation, color swatches with hex/name; **Runway
+  Brand Assets & Guidelines** (`runwayml.com/brand-guidelines`) — minimum
+  size, legibility-on-background, a clear-space grid overlay, and a "Don'ts"
+  grid with crossed-out misuse examples; **Creative Market Logo & Branding
+  Guidelines** (`creativemarket.com/brand`) — a two-column "you should / you
+  should not" table. YouTube's icon-guidelines page and Wix's design-assets
+  page were previewed but not pulled in full (same pattern family, no new
+  detail).
+
+### Reference lock (page structure)
+
+```
+Primary reference: Runway brand-guidelines, for the page skeleton — mark on
+  light/dark, clear-space diagram, explicit misuse examples with a red
+  "don't" label instead of prose bullets.
+Borrow: Linear's card-row pattern for showing variants side by side; Creative
+  Market's you-should/you-should-not framing (adapted here into 4 concrete
+  misuse renders rather than a text table, per this project's house rule that
+  a "don't" is shown, not just stated).
+Reject: any of the three references' own color systems, wordmark type, or
+  layout chrome — this page stays inside ssegning.com's existing hairline-
+  border, achromatic-plus-accent system (see reference lock above); it does
+  not adopt Linear's purple, Runway's centered hero, or Creative Market's
+  teal links.
+```
+
+### The mark: three directions explored, and why the winner won
+
+All three were rendered together (light/dark canvas, 16px/64px/400px, mono
+and accent) in a throwaway HTML harness before any code was written, per the
+skill's "render each, look at each" requirement.
+
+1. **Vesica** (shipped) — two 40×40 squircles (`rx=14`), offset diagonally by
+   (12, 12), combined in one `<path>` with `fill-rule="evenodd"`. Because the
+   two rounded-rect subpaths overlap, evenodd cancels the overlap into a
+   transparent rounded lens instead of a flat double-fill — two crescent
+   masses sharing one diagonal negative-space window. Reads as two distinct
+   forms at 400px, still reads as one coherent mark (not a smudge) at 16px,
+   because the shapes are large and the cut is a single clean diagonal
+   rather than fine detail.
+2. **Stacked Frames** — two offset squircle rings (stroke-only rounded
+   squares, no fill), overlapping like two window frames. Rejected: at 16px
+   the strokes visually fuse into a blob with no legible structure, and at
+   any size it reads too close to a generic "chain link / integration"
+   icon — exactly the kind of literal, done-a-thousand-times connector glyph
+   the brief's "not literal" constraint is aimed at, even though a chain
+   link isn't on the explicit ban list.
+3. **Triad Clover** — three 24×24 squircles (`rx=9`) arranged with exact
+   120° rotational symmetry around a center point (computed via
+   sin/cos 120°, not eyeballed). Rejected: at the overlap needed to keep the
+   three lobes touching, same-color fill merges them into one undifferentiated
+   rounded-triangle blob — the "three rounded masses" premise disappears
+   entirely, both at 400px and 16px, leaving a shape with no more identity
+   than a plain rounded triangle.
+
+Vesica won because it's the only direction whose defining structure (two
+masses + a shared gap) survives being shrunk to a 16px favicon, and because
+its negative-space diagonal is the closest fit to the brief's "S emerges
+from the geometry" prompt without drawing a letterform — the diagonal flow
+through the lens reads as movement/connection, not as a rendered "S".
+
+### The mark: implementation
+
+```
+Path (viewBox 0 0 64 64, fill-rule evenodd, fill="currentColor"):
+M20 6H32A14 14 0 0 1 46 20V32A14 14 0 0 1 32 46H20A14 14 0 0 1 6 32V20A14 14 0 0 1 20 6Z
+M32 18H46A14 14 0 0 1 58 32V46A14 14 0 0 1 46 58H32A14 14 0 0 1 18 46V32A14 14 0 0 1 32 18Z
+```
+
+- `src/components/brand-mark.tsx` — `BrandMark({ size, variant, className })`.
+  `variant: 'mono'` (default, inherits `currentColor`), `'accent'` (forces
+  `text-accent`), `'reversed'` (forces `text-canvas`, for a filled ink/accent
+  surface). Always `aria-hidden` — it's decorative; the accessible name comes
+  from the adjacent wordmark text (see `BrandLockup`).
+- `src/components/brand-lockup.tsx` — `BrandLockup({ label, size, variant })`,
+  mark + wordmark in an `inline-flex`. Deliberately not a link itself, so
+  `site-header.tsx` can wrap it in `next/link` while `/branding` uses it
+  inert.
+- `src/app/icon.svg` — same geometry, hardcoded `#0a0a0a` fill (favicons have
+  no `currentColor` context) — Next's App Router picks this up automatically
+  as the site favicon.
+- `src/app/opengraph-image.tsx` — same path literal (not the shared
+  component: `next/og`'s Satori renderer doesn't process Tailwind classes or
+  resolve `currentColor`), accent-colored, placed above the site name.
+
+### Quality gate (self-check)
+
+- Used styles/screens for a real branding-page pattern, not vibe memory: yes
+  (Linear, Runway, Creative Market, above).
+- Avoided copying one reference directly: yes — page structure synthesized
+  from three sources, color/type system stays the site's own throughout.
+- Explored genuinely different directions, not variations on one idea: yes —
+  negative-space overlap, stroke rings, and rotational-symmetry fill are
+  structurally distinct construction methods, not the same shape recolored.
+- Rendered and looked at every direction before choosing, at both the
+  favicon and hero size: yes.
+- Rejected the two weaker directions for stated, size-specific reasons
+  rather than taste alone: yes.
+- Avoided the literal/banned forms (cloud, server rack, helm wheel, hexagon,
+  infinity loop, drawn letterform): yes.
+- Monochrome-first, single `currentColor` fill, no gradient/shadow/stroke+fill
+  mixing: yes.

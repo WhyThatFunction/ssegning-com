@@ -36,7 +36,7 @@ export const siteSetting: SiteSetting = {
   metaDescription:
     'Independent software and platform engineering consultancy specializing in Kubernetes, cloud infrastructure, Rust, and TypeScript.',
   socials: [
-    { id: 1, platform: 'github', url: 'https://github.com/ssegning' },
+    { id: 1, platform: 'github', url: 'https://github.com/stephane-segning' },
     { id: 2, platform: 'linkedin', url: 'https://www.linkedin.com/in/ssegning' },
     { id: 3, platform: 'x', url: 'https://x.com/ssegning' },
     { id: 4, platform: 'email', url: 'mailto:hello@ssegning.com' },

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { Comments } from '@/components/comments';
 import { Container } from '@/components/container';
 import { Markdown } from '@/components/markdown';
 import { Section } from '@/components/section';
@@ -102,6 +103,13 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
             <Markdown>{post.body}</Markdown>
           </div>
         ) : null}
+
+        <Comments
+          repo={process.env.GISCUS_REPO}
+          repoId={process.env.GISCUS_REPO_ID}
+          category={process.env.GISCUS_CATEGORY}
+          categoryId={process.env.GISCUS_CATEGORY_ID}
+        />
       </Container>
     </Section>
   );
