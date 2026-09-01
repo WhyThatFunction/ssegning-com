@@ -12,7 +12,7 @@
 web:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/web
-    tag: sha-d77aacd
+    tag: sha-3c7d6eb
     pullPolicy: IfNotPresent
   replicas: 2
   serviceName: ssegning-web
@@ -32,7 +32,7 @@ web:
 cms:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/cms
-    tag: sha-d77aacd
+    tag: sha-3c7d6eb
     pullPolicy: IfNotPresent
   serviceName: ssegning-cms
   port: 1337
@@ -73,7 +73,6 @@ postgres:
     limits:
       cpu: "1"
       memory: 1Gi
-
 # barman-cloud backups + WAL archival for the ssegning-pg CNPG Cluster (see
 # templates/postgres.yaml). Bucket/path/endpoint are non-secret config, kept
 # separate from the S3 credentials themselves (externalSecrets.backup below)
@@ -91,14 +90,12 @@ backup:
   # not the usual 5-field crontab — see the comment on this field in
   # templates/postgres.yaml. Daily at 03:00.
   schedule: "0 0 3 * * *"
-
 externalSecrets:
   enabled: true
   storeName: ssegning-aws
   storeKind: ClusterSecretStore
   remoteKey: ssegning/prod/env
   refreshInterval: 1h
-
   # S3 credentials for the barman-cloud ObjectStore above. Deliberately
   # reuses the SAME s3_access_key/s3_secret_key remote properties as the
   # CMS's S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY mapping (externalSecrets.cms
@@ -111,7 +108,6 @@ externalSecrets:
     secretName: ssegning-cnpg-s3-creds
     accessKeyRemoteProperty: s3_access_key
     secretKeyRemoteProperty: s3_secret_key
-
   # Seeds the CNPG bootstrap owner role's password (see templates/postgres.yaml
   # bootstrap.initdb.secret) with a value from Secrets Manager rather than
   # CNPG's own auto-generated one, so the same password is knowable/rotatable
