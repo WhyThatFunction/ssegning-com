@@ -51,8 +51,18 @@ if a new secret-backed env var is ever needed.
 
 - **`web.*`** — image (`repository`/`tag`/`pullPolicy`; CI rewrites
   `web.image.tag` with `yq`), `replicas`, `serviceName`/`port` (also used by
-  `cms.yaml` to build `WEB_REVALIDATE_URL`), `resources`, and
-  `env.nextPublicSiteUrl` (→ `NEXT_PUBLIC_SITE_URL`).
+  `cms.yaml` to build `WEB_REVALIDATE_URL`), `resources`,
+  `env.nextPublicSiteUrl` (→ `NEXT_PUBLIC_SITE_URL`), and `giscus.*`
+  (`enabled`/`repo`/`repoId`/`category`/`categoryId`) for the journal's
+  GitHub-Discussions comment widget. The four giscus identifiers are read
+  **server-side at request time** by `apps/web`'s article page and passed
+  down as props — not exposed as `NEXT_PUBLIC_*` — specifically so a change
+  here takes effect on the next pod restart with no image rebuild; see the
+  long comment on `web.giscus` in `values.yaml` and "Comments" in
+  `apps/web/README.md` for why. None of the four are secrets. Comments
+  additionally require a one-time human step: installing the
+  [giscus GitHub App](https://github.com/apps/giscus) on
+  `WhyThatFunction/ssegning-com`.
 - **`cms.*`** — image (CI rewrites `cms.image.tag`), `serviceName`/`port`
   (also used by `web.yaml` to build `STRAPI_URL`), `resources`, and the
   plain (non-secret) Strapi env values (`publicUrl`, `adminBackendUrl`,
@@ -114,14 +124,21 @@ clean.
 
 ## Known gaps / things not verified from this chart alone
 
-- **CMS `.tmp` emptyDir and web's `readOnlyRootFilesystem`** were left at
-  the safer-but-more-permissive default (writable root filesystem) because
-  `apps/cms`'s and `apps/web`'s actual Dockerfiles (built concurrently
-  elsewhere in this monorepo) weren't visible from this chart's scope.
-  Once those images are final, revisit `templates/cms.yaml` (add a
-  `.tmp`-path `emptyDir` if the WORKDIR is confirmed) and
-  `templates/web.yaml` (flip `readOnlyRootFilesystem: true` + mount the
-  actual Next.js cache dir(s) as `emptyDir`, not just `/tmp`).
+- **CMS `.tmp` emptyDir and web's `readOnlyRootFilesystem`** are still at
+  the safer-but-more-permissive default (writable root filesystem,
+  `readOnlyRootFilesystem: false` in both `templates/cms.yaml` and
+  `templates/web.yaml`). The original reason this was deferred — the
+  Dockerfiles not being visible from this chart's scope — is stale: both
+  `apps/cms/Dockerfile` and `apps/web/Dockerfile` are committed now, and
+  confirm the runtime write paths a hardening pass would need to carve out
+  as `emptyDir` mounts: the CMS's Strapi process writes `.tmp/` (cache) and
+  transiently `public/uploads/` relative to its `/app` WORKDIR (see the
+  Dockerfile's comment on `chown strapi:strapi /app`), and web's Next.js
+  standalone server writes its ISR/on-demand-revalidation cache under
+  `apps/web/.next/cache` (see the comment on `readOnlyRootFilesystem` in
+  `templates/web.yaml`). Tightening this to `readOnlyRootFilesystem: true` +
+  explicit `emptyDir` mounts at those exact paths is still open work, not
+  something blocked on missing information anymore.
 - **ArgoCD Application manifest itself** (destination namespace `ssegning`,
   `CreateNamespace=true`, sync policy/waves) lives outside `deploy/chart` —
   this chart only renders what ArgoCD applies *into* that namespace, not

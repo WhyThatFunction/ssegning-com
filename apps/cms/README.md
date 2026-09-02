@@ -24,12 +24,30 @@ On first boot, `bootstrap()` (see `src/index.ts`):
 2. Grants the Users & Permissions **public** role `find` + `findOne` on
    every content type, so `apps/web` can read the REST API anonymously.
 3. Seeds realistic starter content (site settings, pages, services, case
-   studies, journal posts) — only if no `site-setting` entry exists yet.
+   studies) — only if no `site-setting` entry exists yet (`src/bootstrap/seed.ts`).
+   This step does **not** create journal posts — see the next step.
+4. Publishes the 12 bundled Markdown articles under
+   `src/bootstrap/articles/` into the `post` collection
+   (`src/bootstrap/articles.ts`), one per file, in a fixed release order —
+   but only for slugs that don't already exist. It never updates an
+   existing post, so editing a published post's title/body/excerpt in the
+   Strapi admin is never reverted by a later restart. Because Strapi 5's
+   Document Service always stamps `publishedAt` with "now" on `create()`,
+   the importer backdates each post's release date with a follow-up
+   `strapi.db.query('api::post.post').update(...)` call (the low-level
+   query layer has no such override) so `GET /api/posts?sort=publishedAt:desc`
+   reproduces the intended reading order.
 
 ## Scripts
 
 - `pnpm develop` — start Strapi in development mode (admin panel autoreload).
-- `pnpm build` — build the admin panel for production.
+- `pnpm build` — `strapi build` **followed by**
+  `node scripts/copy-bootstrap-assets.js`. That second step matters:
+  `strapi build` only transpiles `src/**/*.ts` into `dist/`, so without it
+  the bundled article Markdown `src/bootstrap/articles.ts` reads at runtime
+  via `readFileSync` is silently missing from `dist/`, and the production
+  image (which ships only `dist/`, never `src/`) `ENOENT`s reading a bundled
+  article at boot.
 - `pnpm start` — run the built app in production mode.
 - `pnpm strapi -- <command>` — run any Strapi CLI command.
 

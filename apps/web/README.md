@@ -60,6 +60,20 @@ result with `src/content/fallback.ts` (`data ?? fallback`), so a cold or
 down CMS renders full pages with realistic default copy instead of a 500 or
 a blank screen.
 
+**Every route that reads CMS content also declares its own
+`export const revalidate = 60`** (see `app/page.tsx`, `app/journal/page.tsx`,
+`app/journal/[slug]/page.tsx`, `app/about/page.tsx`, `app/contact/page.tsx`,
+`app/work/page.tsx`, `app/work/[slug]/page.tsx`, `app/legal/*/page.tsx`,
+`sitemap.ts`). This is not redundant with the `revalidate`/`tags` options
+already passed to `fetch` in `strapi.ts` — it's what stops the Docker build
+from baking a route as **permanently static**. The production image is
+built in CI, which has no Strapi to talk to, so every fetch during that
+build resolves via the fail-soft path above with nothing revalidatable
+recorded. Without the route-level `revalidate` export, Next has no other
+signal and treats the route as static forever, serving fallback copy
+indefinitely even once the CMS is reachable in the running cluster. If you
+add a new page that reads `strapi.ts`, it needs this export too.
+
 `GET /api/healthz` never touches Strapi — it only reports this app's own
 liveness.
 

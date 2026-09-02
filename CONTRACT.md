@@ -1,3 +1,13 @@
+> **This document is historical.** It was written as the build brief
+> *before* any of this code existed, and parts of it no longer match what
+> shipped — most notably the journal-post seed (superseded by the bundled-
+> article importer below), and it predates mermaid rendering and the giscus
+> comment system entirely. It is kept because it documents original intent
+> and the full content-model schema, which is still accurate. **`README.md`
+> at the repo root is the current source of truth for how the site actually
+> works and deploys.** Where this file and the shipped code disagree, the
+> code wins — the disagreements found so far are called out inline below.
+
 # ssegning.com — build contract (authoritative, do not change)
 
 Monorepo `WhyThatFunction/ssegning-com`. pnpm workspaces. Node 22. TypeScript everywhere.
@@ -122,8 +132,18 @@ Components:
 `site-setting` entry. It creates published, realistic content for a solo
 software/platform-engineering consultancy run by Stephane Segning Lambou
 (Cloud/Kubernetes/Rust/TypeScript, based in Germany): site settings, home page,
-about page, contact page, legal page, 4 services, 3 projects, 2 journal posts.
+about page, contact page, legal page, 4 services, 3 projects.
 Content must be real prose, never lorem ipsum. Always idempotent.
+
+> **Superseded:** the original brief had `seed.ts` also create 2 journal
+> posts. The shipped code does not — `post` entries are no longer part of
+> the seed at all. Instead, `apps/cms/src/bootstrap/articles.ts` publishes
+> 12 bundled Markdown articles (`apps/cms/src/bootstrap/articles/`) into the
+> `post` collection on every boot, create-if-slug-absent (never updates), so
+> an edit made to a published post in the Strapi admin is never reverted by
+> a restart. See `README.md`'s "Content model" and "Gotchas" sections for
+> the mechanics (including the Document Service `publishedAt` override this
+> importer has to work around).
 
 ## REST contract used by apps/web
 GET {STRAPI_URL}/api/site-setting?populate=*
