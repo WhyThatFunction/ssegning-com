@@ -56,32 +56,40 @@ spec:
                 port:
                   number: {{ .Values.cms.port }}
 ---
-# Redirect Ingress — www.ssegning.com, god.ssegning.com, apps.ssegning.com
-# all 301 to the apex via the redirect-to-apex Middleware (middleware.yaml).
-# A real backend Service is still required even though the middleware
-# short-circuits every request before it would ever reach it: Kubernetes'
-# Ingress schema has no "middleware-only, no backend" shape, and Traefik
-# itself refuses to build a router with no default backend at all. Pointing
-# it at ssegning-web is arbitrary (it's never actually invoked) but keeps
-# this Ingress self-contained rather than inventing a dummy Service.
+# Redirect Ingresses — one per entry in `ingress.redirects` (values.yaml).
+# Every hostname here exists only to 301 somewhere else; none of them serve
+# content.
+#
+# A real backend Service is still required even though the middleware chain
+# short-circuits every request before it could reach it: Kubernetes' Ingress
+# schema has no "middleware-only, no backend" shape, and Traefik refuses to
+# build a router with no default backend at all. Pointing it at ssegning-web
+# is arbitrary (it is never actually invoked) but keeps these Ingresses
+# self-contained rather than inventing a dummy Service.
+#
+# The annotation lists BOTH middlewares of the pair, root first — see
+# middleware.yaml for why the split exists. The reference format is
+# `<namespace>-<middlewareName>@kubernetescrd`.
+{{- range .Values.ingress.redirects }}
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ssegning-redirect
-  namespace: {{ .Release.Namespace }}
+  name: {{ .ingressName }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    app.kubernetes.io/name: ssegning-redirect
+    app.kubernetes.io/name: {{ .ingressName }}
     app.kubernetes.io/part-of: ssegning-com
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: "{{ .Release.Namespace }}-{{ .Values.ingress.redirect.middlewareName }}@kubernetescrd"
+    traefik.ingress.kubernetes.io/router.middlewares: "{{ $.Release.Namespace }}-{{ .name }}-root@kubernetescrd,{{ $.Release.Namespace }}-{{ .name }}-path@kubernetescrd"
 spec:
-  ingressClassName: {{ .Values.ingress.className }}
+  ingressClassName: {{ $.Values.ingress.className }}
   tls:
-    - secretName: {{ .Values.ingress.tlsSecretName }}
+    - secretName: {{ $.Values.ingress.tlsSecretName }}
       hosts:
-        {{- toYaml .Values.ingress.redirect.hosts | nindent 8 }}
+        {{- toYaml .hosts | nindent 8 }}
   rules:
-    {{- range .Values.ingress.redirect.hosts }}
+    {{- range .hosts }}
     - host: {{ . }}
       http:
         paths:
@@ -93,3 +101,4 @@ spec:
                 port:
                   number: {{ $.Values.web.port }}
     {{- end }}
+{{- end }}

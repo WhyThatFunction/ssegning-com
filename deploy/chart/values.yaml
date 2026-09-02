@@ -214,6 +214,7 @@ certificate:
     - cms.ssegning.com
     - god.ssegning.com
     - apps.ssegning.com
+    - blog.ssegning.com
 ingress:
   className: traefik
   tlsSecretName: ssegning-tls
@@ -221,17 +222,38 @@ ingress:
     host: ssegning.com
   cms:
     host: cms.ssegning.com
-  # Hosts that 301-redirect to the apex via the redirect-to-apex Middleware.
-  # www.ssegning.com is deliberately NOT also listed as a host on
-  # `ingress.web` above — Traefik would then have two Ingress objects
-  # declaring an identical Host+PathPrefix router for the same hostname
-  # (one plain, one middleware-wrapped), which is an undefined-priority
-  # collision, not a "last one wins." Keeping www exclusively here is what
-  # actually makes the apex Ingress "clean."
-  redirect:
-    hosts:
-      - www.ssegning.com
-      - god.ssegning.com
-      - apps.ssegning.com
-    targetUrl: https://ssegning.com
-    middlewareName: redirect-to-apex
+  # Whole hostnames that exist only to 301 somewhere else. Each entry renders
+  # its own Ingress plus a PAIR of Traefik Middlewares (see
+  # templates/middleware.yaml).
+  #
+  # None of these hosts may also appear on `ingress.web`/`ingress.cms` above:
+  # two Ingress objects declaring an identical Host+PathPrefix router for one
+  # hostname (one plain, one middleware-wrapped) is an undefined-priority
+  # collision in Traefik, not a "last one wins."
+  #
+  # WHY TWO MIDDLEWARES PER ENTRY, not one. A single
+  # `^https?://[^/]+/(.*)` -> `<target>/${1}` rule sends the bare root to
+  # `<target>/` with a trailing slash. That is harmless for a target with no
+  # path (`https://ssegning.com/` IS the root) but wrong for one that has a
+  # path: `blog.ssegning.com` would land on `https://ssegning.com/journal/`,
+  # which Next.js then 308s again to `/journal` because `trailingSlash` is
+  # false. Two chained rules — an exact-root rule and a has-a-path rule —
+  # make every hop land on its final URL directly. Traefik evaluates the
+  # chain in order and a redirectRegex that does not match simply falls
+  # through to the next one.
+  redirects:
+    - name: to-apex
+      ingressName: ssegning-redirect
+      targetUrl: https://ssegning.com
+      hosts:
+        - www.ssegning.com
+        - god.ssegning.com
+        - apps.ssegning.com
+    # blog.ssegning.com is a legacy/vanity hostname for the writing, so it
+    # maps onto the journal rather than the apex, preserving the slug:
+    # blog.ssegning.com/pandoras-bucket -> ssegning.com/journal/pandoras-bucket.
+    - name: to-journal
+      ingressName: ssegning-blog-redirect
+      targetUrl: https://ssegning.com/journal
+      hosts:
+        - blog.ssegning.com
