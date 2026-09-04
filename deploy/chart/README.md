@@ -65,7 +65,7 @@ directly to the public Internet:
 
 - **SMTP** — `cms.env.smtpHost`/`smtpPort` point at the `mail` Service in
   the `mail-system` namespace
-  (`mail.mail-system.svc.cluster.local:587`, STARTTLS submission, SASL
+  (`mail.mail-system.svc.cluster.local:587`, TLS disabled on this hop, SASL
   auth required). The CMS only ever talks to this in-cluster relay; the
   postfix pod behind it is what makes the real outbound TLS connection
   further upstream. `cms.env.emailDefaultFrom` must stay within the

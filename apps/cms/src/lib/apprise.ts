@@ -64,13 +64,13 @@ function deriveAlertUrls(): string | null {
   const to = encodeURIComponent(alertTo);
   const fromParam = encodeURIComponent(from);
 
-  // `mode=starttls` matches the relay's port-587 submission. `verify=no`
-  // disables certificate verification for the same reason the nodemailer
-  // transport sets `rejectUnauthorized: false` (see config/plugins.ts): the
-  // relay presents a self-signed cert and the hop never leaves the cluster.
-  // Without it Apprise's smtplib call fails the handshake and the alert is
-  // silently dropped.
-  return `mailto://${user}:${pass}@${host}:${port}/?to=${to}&from=${fromParam}&mode=starttls&verify=no`;
+  // `mode=insecure` keeps this hop in step with the nodemailer transport in
+  // config/plugins.ts, which has TLS disabled for the reasons documented
+  // there. Apprise's own SecureMailMode accepts exactly `insecure`, `ssl` or
+  // `starttls` (confirmed against the deployed Apprise 1.12.0) — an
+  // unrecognised value makes Apprise reject the URL outright rather than
+  // fall back, so this string is not free-form.
+  return `mailto://${user}:${pass}@${host}:${port}/?to=${to}&from=${fromParam}&mode=insecure`;
 }
 
 /**

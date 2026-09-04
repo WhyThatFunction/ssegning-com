@@ -88,7 +88,8 @@ cms:
     # postfix relay pod (mail-0) is the one that terminates the actual
     # outbound TLS connection to whatever upstream smart host it's
     # configured with — the CMS never talks to the public Internet for
-    # mail. Port 587 is the STARTTLS submission port, which means the
+    # mail. Port 587 is the submission port; TLS is disabled on this hop
+    # (see apps/cms/config/plugins.ts for why), which means the
     # connection starts in plaintext and upgrades in-band, and — unlike
     # port 25 relaying — requires SASL authentication; that's what
     # SMTP_SASL_USERS (below, under externalSecrets.cms.mappings) supplies.
