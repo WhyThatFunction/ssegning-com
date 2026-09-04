@@ -25,7 +25,11 @@
       "type": "text"
     },
     "body": {
-      "type": "richtext"
+      "type": "customField",
+      "customField": "plugin::tiptap-editor.RichText",
+      "options": {
+        "preset": "article"
+      }
     },
     "cover": {
       "type": "media",

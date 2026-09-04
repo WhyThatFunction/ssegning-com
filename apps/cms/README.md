@@ -36,11 +36,18 @@ On first boot, `bootstrap()` (see `src/index.ts`):
    the importer backdates each post's release date with a follow-up
    `strapi.db.query('api::post.post').update(...)` call (the low-level
    query layer has no such override) so `GET /api/posts?sort=publishedAt:desc`
-   reproduces the intended reading order.
+   reproduces the intended reading order. Each article's Markdown body is
+   converted to HTML (`src/lib/markdown-to-html.ts`) before it's written —
+   see "Rich Text (Tiptap) field" below.
+5. Converts any pre-existing post's `body` from Markdown to HTML, once
+   (`src/bootstrap/migrate-article-bodies.ts`) — a one-time cutover
+   migration for posts created before `post.body` switched to the Tiptap
+   custom field. Idempotent: a post already holding HTML is left alone, so
+   this is a cheap no-op on every boot after the first.
 
 The whole sequence is wrapped in a try/catch that fires an Apprise
 notification either way (`src/lib/apprise.ts`) — a `success` heartbeat once
-all four steps complete, or a `failure` alert with the error message if any
+all five steps complete, or a `failure` alert with the error message if any
 step throws, after which the error is re-thrown so Strapi still fails
 loudly. See "Mail and alerting paths" below.
 
@@ -95,26 +102,56 @@ same SMTP credentials, or `APPRISE_ALERT_URLS` if set — on every call.
 ## Rich Text (Tiptap) field
 
 `@notum-cz/strapi-plugin-tiptap-editor` (MIT, free, no licence key) is
-installed and registered in `config/plugins.ts`. It adds a **new** custom
-field type — "Rich Text (Tiptap)" — to the Content-Type Builder. It does
-**not** replace the built-in `richtext` type: `post.body` (see
-`src/api/post/content-types/post/schema.json`) is untouched, and none of
-the bundled bootstrap articles are migrated or affected.
+installed and registered in `config/plugins.ts`. It adds a custom field
+type — "Rich Text (Tiptap)" — to the Content-Type Builder, storing HTML
+instead of Markdown.
+
+`post.body` (see `src/api/post/content-types/post/schema.json`) uses this
+field type with the `article` preset — a hard cutover from the built-in
+`richtext` type, not an opt-in addition. Every other `richtext` field in the
+project (about-page.bio, contact-page.body, home-page.introBody,
+legal-page.imprint/privacy/terms, project.body, service.body) is untouched;
+they hold plain prose, not Markdown, and stay out of scope.
+
+Because `post.body` used to be Markdown, two conversion paths exist, both
+using `src/lib/markdown-to-html.ts` (built on `marked`, with GFM tables on
+by default):
+
+- **New bundled articles** — `src/bootstrap/articles.ts` converts each
+  article's Markdown body to HTML before writing it. `excerpt` and
+  `readingMinutes` are still derived from the Markdown source, not the
+  HTML — both of those derivations are tuned for Markdown's own
+  emphasis/quote syntax.
+- **Pre-existing posts** — `src/bootstrap/migrate-article-bodies.ts` runs
+  once on every boot (see the bootstrap sequence above) and converts any
+  post whose body isn't already HTML. It's idempotent: `looksLikeHtml()`
+  (also in `markdown-to-html.ts`) skips posts already converted, so this
+  is a no-op once the whole corpus has been migrated.
+
+**The Mermaid contract:** fenced code blocks with a language, e.g.
+` ```mermaid `, convert to `<pre><code class="language-mermaid">…</code></pre>`.
+This exact markup is load-bearing on both ends — Tiptap's `CodeBlock` node
+(configured with `languageClassPrefix: "language-"`) parses and re-emits it
+unchanged, and the website's article renderer detects a Mermaid diagram by
+matching that same class. `markdown-to-html.ts` asserts this holds for
+every fenced block with a declared language, rather than assuming it, so a
+future `marked` upgrade that changed its default renderer would fail loudly
+instead of silently breaking diagrams.
 
 Two presets are defined (`config/plugins.ts`), chosen to match what the
 bundled Markdown articles under `src/bootstrap/articles/` actually use
 (headings, bold/italic, inline code, fenced/mermaid code blocks,
 blockquotes, lists, links, tables):
 
-- `article` — the full feature set for long-form body copy.
+- `article` — the full feature set for long-form body copy. Used by
+  `post.body`.
 - `minimal` — bold/italic/link only, for short-form copy like excerpts or
   captions.
 
-To opt a field into it: in the Strapi admin, open **Content-Type
+To opt another field into it: in the Strapi admin, open **Content-Type
 Builder** → add or edit a field → choose **Rich Text (Tiptap)** as the
 type → in **Advanced Settings**, pick a preset from the **Editor Preset**
-dropdown → save the content type. Existing fields are unaffected unless
-someone deliberately changes their type.
+dropdown → save the content type.
 
 ### Peer dependency caveat
 

@@ -81,12 +81,20 @@ export default ({ env }) => {
       },
     },
     // Adds a "Rich Text (Tiptap)" custom field type in the Content-Type
-    // Builder. It does NOT replace the built-in `richtext` type — the
-    // `post.body` field (see src/api/post/content-types/post/schema.json)
-    // stays exactly as it is, and none of the bundled bootstrap articles
-    // are migrated. An editor opts a *new* field into Tiptap by adding it
-    // in the Content-Type Builder, picking "Rich Text (Tiptap)" as the
-    // type, and choosing one of the presets below in Advanced Settings.
+    // Builder. `post.body` (see src/api/post/content-types/post/schema.json)
+    // is switched to it, with the "article" preset below — a hard cutover,
+    // not an opt-in: the built-in `richtext` type is gone from that field.
+    // Posts that existed before the cutover hold raw Markdown; those are
+    // converted to HTML once, on boot, by
+    // src/bootstrap/migrate-article-bodies.ts (see src/index.ts), and new
+    // bundled articles are converted at creation time in
+    // src/bootstrap/articles.ts. The other 8 `richtext` fields in the
+    // project (about-page.bio, contact-page.body, home-page.introBody,
+    // legal-page.imprint/privacy/terms, project.body, service.body) are
+    // untouched — they hold plain prose, not Markdown, and stay out of
+    // scope. An editor opts any *other* field into Tiptap by adding it in
+    // the Content-Type Builder, picking "Rich Text (Tiptap)" as the type,
+    // and choosing one of the presets below in Advanced Settings.
     //
     // Presets are feature allow-lists (see plugin README "Available
     // Extensions" for the exhaustive key list — anything not listed here

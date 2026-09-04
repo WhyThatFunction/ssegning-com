@@ -143,6 +143,14 @@ export interface Post {
   title: string;
   slug: string;
   excerpt: string | null;
+  /**
+   * Tiptap-authored HTML (not Strapi's Markdown `richtext` like every other
+   * `body`/prose field on this page) — see
+   * `apps/cms/src/lib/markdown-to-html.ts` for the one-time Markdown->HTML
+   * conversion this content went through. Render via
+   * `@/components/rich-html`'s `<RichHtml>`, which sanitizes before parsing,
+   * never `@/components/markdown`'s `<Markdown>`.
+   */
   body: string | null;
   cover: StrapiMedia | null;
   readingMinutes: number | null;
