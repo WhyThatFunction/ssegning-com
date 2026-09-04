@@ -20,11 +20,14 @@ export default ({ env }) => {
           secure: false,
           requireTLS: true,
           tls: {
-            // The in-cluster postfix relay (mail.mail-system.svc.cluster.local)
-            // presents a self-signed cert (bokysan/docker-postfix chart
-            // default). The hop never leaves the cluster network, so strict
-            // verification is off by default; set SMTP_TLS_REJECT_UNAUTHORIZED
-            // to re-enable it once the relay has a trusted cert.
+            // The in-cluster postfix relay presents a SELF-SIGNED cert whose
+            // subject is `CN=localhost` (verified against the live service on
+            // 2026-09-04: self-signed, valid to 2035). So verification would
+            // fail twice over — untrusted issuer, and a CN that can never
+            // match mail.mail-system.svc.cluster.local. The hop never leaves
+            // the cluster network, so it is off by default; flipping
+            // SMTP_TLS_REJECT_UNAUTHORIZED on requires giving the relay a
+            // trusted cert with a matching SAN first, not just the flag.
             rejectUnauthorized: env.bool('SMTP_TLS_REJECT_UNAUTHORIZED', false),
           },
           ...(smtpCredentials && { auth: smtpCredentials }),
