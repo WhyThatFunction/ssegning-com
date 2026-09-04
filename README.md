@@ -106,10 +106,18 @@ it never updates one. So editing a published post's title, body, or excerpt
 in the Strapi admin sticks — the next pod restart will not revert it, since
 the importer's create-if-absent check already finds the slug.
 
+Editors can also opt any new field into a Tiptap rich-text editor
+(`@notum-cz/strapi-plugin-tiptap-editor`, registered in
+`apps/cms/config/plugins.ts` with `article` and `minimal` presets). This
+adds a "Rich Text (Tiptap)" field type to the Content-Type Builder
+alongside Strapi's built-in `richtext` — it does not replace it, so
+`post.body` and every other existing schema field is untouched, and none
+of the bundled bootstrap articles were migrated.
+
 ## Gotchas
 
 Each of these cost real production debugging time. Verified against the
-current code as of this writing (2026-09-02) — if you find one that no
+current code as of this writing (2026-09-04) — if you find one that no
 longer holds, fix this table, don't just work around it.
 
 | Gotcha | Why it matters |
@@ -120,12 +128,16 @@ longer holds, fix this table, don't just work around it.
 | Strapi 5's Document Service overrides `publishedAt` on `create()`. | It always stamps "now", ignoring any `publishedAt` passed in — so `articles.ts` backdates each post's release date via a follow-up `strapi.db.query('api::post.post').update(...)` (the low-level query layer, which has no such override) to reproduce the intended one-week-apart release order under `GET /api/posts?sort=publishedAt:desc`. |
 | `apps/web/public` must contain a tracked file. | An empty, untracked `public/` directory passes a local build (pnpm/git don't care) but fails every CI build from a clean clone, since Docker's build context only sees what git tracks. `.gitkeep` + a `README.md` are committed there for exactly this reason — don't let both get deleted. |
 | `pnpm-workspace.yaml` carries `minimumReleaseAgeExclude` and an `@types/react` `overrides`. | pnpm 11's `minimumReleaseAge` guard refuses to resolve any package published in the last 24h — which fires on every `--frozen-lockfile` install inside a Docker build — so newly-adopted versions (Next.js 16.3.4 and its per-platform binaries, `lucide-react` 1.38.0) need an explicit, temporary allowlist entry until they age out. Separately, Strapi's admin dependency tree pulls `@types/react@18` as a transitive peer while `apps/web` is on React 19; two copies of `@types/react` in one workspace make `ReactNode` non-assignable to itself, breaking `next build`'s type check — the `overrides` block collapses both to the React 19 version. |
+| `EMAIL_DEFAULT_FROM` must stay inside the mail relay's `ALLOWED_SENDER_DOMAINS`. | The in-cluster postfix relay (`mail-system` namespace) enforces an explicit sender-domain allow-list; a `From` address outside it is a hard rejection at submission time, not a soft bounce later. Changing `EMAIL_DEFAULT_FROM`/`emailDefaultFrom` needs the relay's own config updated first, or outbound mail (and the derived Apprise `mailto://` alert URL, which reuses the same value) breaks immediately. |
+| `@notum-cz/strapi-plugin-tiptap-editor` pins its `@strapi/strapi` peer to the exact string `5.39.0`. | This repo runs `5.52.2`. pnpm only warns rather than failing, since this repo doesn't set `strict-peer-dependencies` — a real `strapi build` succeeds and the plugin's admin bundle lands in `dist/build/` as verified, but a stricter install elsewhere (a fresh `--frozen-lockfile` with peer strictness on) could fail on this mismatch. Upstream issue #27 / PR #34 track loosening the pin. |
 
 ## Operations
 
 | Concern | Detail |
 |---|---|
-| Secrets | AWS Secrets Manager `ssegning/prod/env`, synced in via the `ssegning-aws` `ClusterSecretStore` (external-secrets). See `deploy/chart/README.md` for the full property → env-var mapping. |
+| Secrets | AWS Secrets Manager `ssegning/prod/env`, synced in via the `ssegning-aws` `ClusterSecretStore` (external-secrets). One mapping is the exception: `SMTP_SASL_USERS` sets its own `remoteKey: prod/meta/test-app` to read the shared infra secret the mail relay itself is configured from (the same one `imagePullSecret` already uses), so rotating that credential keeps relay and client in sync. See `deploy/chart/README.md` for the full property → env-var mapping. |
+| Outbound email | Strapi (`@strapi/provider-email-nodemailer`, `apps/cms/config/plugins.ts`) → in-cluster postfix relay `mail.mail-system.svc.cluster.local:587` (STARTTLS submission, SASL-authenticated, self-signed cert so verification is off — the hop never leaves the cluster) → that relay's own upstream smart host. `EMAIL_DEFAULT_FROM` must stay inside the relay's `ALLOWED_SENDER_DOMAINS` (see Gotchas). |
+| Alerting | `apps/cms/src/lib/apprise.ts` posts a `success`/`failure` notification on every CMS `bootstrap()` to the stateless in-cluster Apprise at `apprise.notification-system.svc.cluster.local:8000` — a deploy heartbeat either way. Apprise has no persistent config, so target URLs go per-request: by default a `mailto://` derived from the same SMTP credentials, or `APPRISE_ALERT_URLS` verbatim if set, the swap point for moving alerts to Slack/Telegram/etc. with no code change. Never throws or blocks boot; times out after 5s. |
 | Media uploads | MinIO bucket `ssegning-uploads`, world-readable by design (anonymous `s3:GetObject`) since the site serves images straight out of it. |
 | Postgres backups | barman-cloud to the **private** `ssegning-cnpg-backups` bucket (a separate bucket from uploads, deliberately not in the anonymous-read policy) — nightly `ScheduledBackup` at 03:00 plus continuous WAL archiving. |
 | Comments | One manual step left: install the [giscus GitHub App](https://github.com/apps/giscus) on `WhyThatFunction/ssegning-com`. Until then the widget renders but reports "giscus is not installed on this repository"; the page degrades cleanly either way. |

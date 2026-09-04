@@ -13,39 +13,73 @@ helm lint deploy/chart
 
 ## AWS Secrets Manager requirements
 
-All three `ExternalSecret`s in this chart read from **one** secret in
+Most `ExternalSecret`s in this chart read from **one** secret in
 `ClusterSecretStore/ssegning-aws` (AWS Secrets Manager, eu-central-1):
 
 ```
 ssegning/prod/env
 ```
 
-That secret must contain every property below (JSON keys, one property per
-env var this chart injects):
+but a mapping under `externalSecrets.cms.mappings` may instead set its own
+`remoteKey` to pull from a *different* secret in the same
+`ClusterSecretStore` — used for credentials this app doesn't own (a shared
+fleet/infra credential). `SMTP_SASL_USERS` below is the one such case today;
+see the "Remote secret" column.
 
-| Property                | Consumed by                                     | Purpose |
-|--------------------------|--------------------------------------------------|---------|
-| `postgres_password`     | `ssegning-pg-owner`, `ssegning-cms-secrets`      | CNPG owner-role password AND the CMS's `DATABASE_PASSWORD` (same value, both sides) |
-| `strapi_app_keys`       | `ssegning-cms-secrets` → `APP_KEYS`              | Strapi session keys (comma-separated, 4 keys) |
-| `strapi_api_token_salt` | `ssegning-cms-secrets` → `API_TOKEN_SALT`        | Strapi API token salt |
-| `strapi_admin_jwt_secret` | `ssegning-cms-secrets` → `ADMIN_JWT_SECRET`    | Strapi admin JWT signing secret |
-| `strapi_transfer_token_salt` | `ssegning-cms-secrets` → `TRANSFER_TOKEN_SALT` | Strapi data-transfer token salt |
-| `strapi_jwt_secret`     | `ssegning-cms-secrets` → `JWT_SECRET`            | Strapi Users & Permissions JWT secret |
-| `strapi_encryption_key` | `ssegning-cms-secrets` → `ENCRYPTION_KEY`        | Strapi field encryption key |
-| `s3_access_key`         | `ssegning-cms-secrets` → `S3_ACCESS_KEY_ID`      | MinIO (s3.ssegning.me) access key |
-| `s3_secret_key`         | `ssegning-cms-secrets` → `S3_SECRET_ACCESS_KEY`  | MinIO secret key |
-| `revalidate_secret`     | `ssegning-cms-secrets` → `WEB_REVALIDATE_SECRET`, `ssegning-web-secrets` → `REVALIDATE_SECRET` | Shared secret between web's `/api/revalidate` route and the CMS's outbound revalidate call — must be the SAME value both places |
-| `admin_email`           | `ssegning-cms-secrets` → `ADMIN_EMAIL`           | Strapi super-admin bootstrap (CONTRACT.md ADDENDUM 1) |
-| `admin_password`        | `ssegning-cms-secrets` → `ADMIN_PASSWORD`        | Strapi super-admin bootstrap |
-| `admin_firstname`       | `ssegning-cms-secrets` → `ADMIN_FIRSTNAME`       | Strapi super-admin bootstrap |
-| `admin_lastname`        | `ssegning-cms-secrets` → `ADMIN_LASTNAME`        | Strapi super-admin bootstrap |
-| `s3_access_key`         | `ssegning-cnpg-s3-creds` → `accessKeyId`         | barman-cloud backups (same MinIO access key as the CMS uploads, additionally granted access to the private `ssegning-cnpg-backups` bucket) |
-| `s3_secret_key`         | `ssegning-cnpg-s3-creds` → `secretKey`           | barman-cloud backups (same MinIO secret key as the CMS uploads) |
+`ssegning/prod/env` must contain every property below with a `-` in the
+Remote secret column (JSON keys, one property per env var this chart
+injects):
 
-The exact property→env-var mapping lives in `values.yaml` under
+| Property                | Remote secret | Consumed by                                     | Purpose |
+|--------------------------|---------------|--------------------------------------------------|---------|
+| `postgres_password`     | -             | `ssegning-pg-owner`, `ssegning-cms-secrets`      | CNPG owner-role password AND the CMS's `DATABASE_PASSWORD` (same value, both sides) |
+| `strapi_app_keys`       | -             | `ssegning-cms-secrets` → `APP_KEYS`              | Strapi session keys (comma-separated, 4 keys) |
+| `strapi_api_token_salt` | -             | `ssegning-cms-secrets` → `API_TOKEN_SALT`        | Strapi API token salt |
+| `strapi_admin_jwt_secret` | -           | `ssegning-cms-secrets` → `ADMIN_JWT_SECRET`    | Strapi admin JWT signing secret |
+| `strapi_transfer_token_salt` | -        | `ssegning-cms-secrets` → `TRANSFER_TOKEN_SALT` | Strapi data-transfer token salt |
+| `strapi_jwt_secret`     | -             | `ssegning-cms-secrets` → `JWT_SECRET`            | Strapi Users & Permissions JWT secret |
+| `strapi_encryption_key` | -             | `ssegning-cms-secrets` → `ENCRYPTION_KEY`        | Strapi field encryption key |
+| `s3_access_key`         | -             | `ssegning-cms-secrets` → `S3_ACCESS_KEY_ID`      | MinIO (s3.ssegning.me) access key |
+| `s3_secret_key`         | -             | `ssegning-cms-secrets` → `S3_SECRET_ACCESS_KEY`  | MinIO secret key |
+| `revalidate_secret`     | -             | `ssegning-cms-secrets` → `WEB_REVALIDATE_SECRET`, `ssegning-web-secrets` → `REVALIDATE_SECRET` | Shared secret between web's `/api/revalidate` route and the CMS's outbound revalidate call — must be the SAME value both places |
+| `admin_email`           | -             | `ssegning-cms-secrets` → `ADMIN_EMAIL`           | Strapi super-admin bootstrap (CONTRACT.md ADDENDUM 1) |
+| `admin_password`        | -             | `ssegning-cms-secrets` → `ADMIN_PASSWORD`        | Strapi super-admin bootstrap |
+| `admin_firstname`       | -             | `ssegning-cms-secrets` → `ADMIN_FIRSTNAME`       | Strapi super-admin bootstrap |
+| `admin_lastname`        | -             | `ssegning-cms-secrets` → `ADMIN_LASTNAME`        | Strapi super-admin bootstrap |
+| `s3_access_key`         | -             | `ssegning-cnpg-s3-creds` → `accessKeyId`         | barman-cloud backups (same MinIO access key as the CMS uploads, additionally granted access to the private `ssegning-cnpg-backups` bucket) |
+| `s3_secret_key`         | -             | `ssegning-cnpg-s3-creds` → `secretKey`           | barman-cloud backups (same MinIO secret key as the CMS uploads) |
+| `smtpd_sasl_users`      | `prod/meta/test-app` | `ssegning-cms-secrets` → `SMTP_SASL_USERS` | SASL credentials the `mail` SMTP relay (`mail-system` namespace) itself is configured with — shared infra credential, NOT owned by this app; same secret `imagePullSecret.remoteKey` already reads |
+
+The exact property→env-var mapping (and, for `SMTP_SASL_USERS`, which
+remote secret it reads instead of the default) lives in `values.yaml` under
 `externalSecrets.cms.mappings` / `externalSecrets.web.mappings` /
 `externalSecrets.postgresOwner` — add a property there (not in a template)
-if a new secret-backed env var is ever needed.
+if a new secret-backed env var is ever needed; give the mapping its own
+`remoteKey` only if the value should come from a secret other than
+`ssegning/prod/env`.
+
+## Outbound mail + notifications
+
+The CMS sends mail and alerts through two other in-cluster services, never
+directly to the public Internet:
+
+- **SMTP** — `cms.env.smtpHost`/`smtpPort` point at the `mail` Service in
+  the `mail-system` namespace
+  (`mail.mail-system.svc.cluster.local:587`, STARTTLS submission, SASL
+  auth required). The CMS only ever talks to this in-cluster relay; the
+  postfix pod behind it is what makes the real outbound TLS connection
+  further upstream. `cms.env.emailDefaultFrom` must stay within the
+  relay's own `ALLOWED_SENDER_DOMAINS` allow-list or postfix rejects the
+  message outright at submission time. The relay's SASL credentials are
+  injected as `SMTP_SASL_USERS`, sourced from AWS Secrets Manager secret
+  `prod/meta/test-app` (property `smtpd_sasl_users`) — see the table above.
+- **Apprise** — `cms.env.appriseUrl` points at the `apprise` Service in the
+  `notification-system` namespace
+  (`http://apprise.notification-system.svc.cluster.local:8000`). Apprise
+  itself is stateless (no persistent per-app config); the CMS supplies the
+  target notification URL(s) on every call via `cms.env.appriseAlertTo`
+  (→ `APPRISE_ALERT_TO`). That makes `appriseAlertTo` the swap point for
+  moving alerts off email onto another Apprise-supported channel later.
 
 ## values.yaml reference
 
@@ -66,7 +100,10 @@ if a new secret-backed env var is ever needed.
 - **`cms.*`** — image (CI rewrites `cms.image.tag`), `serviceName`/`port`
   (also used by `web.yaml` to build `STRAPI_URL`), `resources`, and the
   plain (non-secret) Strapi env values (`publicUrl`, `adminBackendUrl`,
-  `s3Endpoint`, `s3Region`, `s3Bucket`, `s3PublicBase`).
+  `s3Endpoint`, `s3Region`, `s3Bucket`, `s3PublicBase`, `smtpHost`,
+  `smtpPort`, `emailDefaultFrom`, `emailDefaultReplyTo`, `appriseUrl`,
+  `appriseAlertTo` — see "Outbound mail + notifications" below for the
+  latter six).
 - **`postgres.*`** — CNPG `Cluster` name, `instances`, patch-pinned
   `imageName` (see the comment on that key for how it was verified before
   pinning), `database`/`owner`/`port`, `storage.size`/`storageClass`,

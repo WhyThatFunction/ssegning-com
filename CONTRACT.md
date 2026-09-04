@@ -189,3 +189,50 @@ Corresponding chart change: the `ssegning-cms-secrets` ExternalSecret gains
 four more keys — `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FIRSTNAME`,
 `ADMIN_LASTNAME` — from remote properties `admin_email`, `admin_password`,
 `admin_firstname`, `admin_lastname`; and the CMS Deployment injects them.
+
+## ADDENDUM 2 — Outbound mail + Apprise alerting (added after initial dispatch)
+
+Extra CMS env vars:
+
+SMTP_HOST                      (mail.mail-system.svc.cluster.local)
+SMTP_PORT                      (587 — STARTTLS submission, not implicit TLS)
+EMAIL_DEFAULT_FROM             (must stay inside the relay's ALLOWED_SENDER_DOMAINS)
+EMAIL_DEFAULT_REPLY_TO
+SMTP_TLS_REJECT_UNAUTHORIZED   (optional, default false — relay presents a self-signed cert)
+APPRISE_URL                    (http://apprise.notification-system.svc.cluster.local:8000)
+APPRISE_ALERT_TO
+APPRISE_ALERT_URLS             (optional — overrides the derived mailto:// URL verbatim)
+
+Extra CMS secret: SMTP_SASL_USERS (raw `user:password` value of the mail
+relay's own `smtpd_sasl_users` property).
+
+`apps/cms/config/plugins.ts` registers the `@strapi/provider-email-nodemailer`
+`email` plugin pointed at the in-cluster postfix relay: port 587, STARTTLS,
+SASL auth via `SMTP_SASL_USERS` (parsed by `src/lib/smtp-credentials.ts`,
+which tolerates it being unset — that's what lets local dev boot with mail
+disabled), TLS verification off by default since the relay's cert is
+self-signed and the hop never leaves the cluster network.
+`apps/cms/src/lib/apprise.ts` posts to the stateless in-cluster Apprise
+instance from `bootstrap()` in `src/index.ts`: a `success` notification when
+bootstrap completes, a `failure` one if it throws — the error is always
+re-thrown afterward, so this is an alerting side channel, not a recovery
+path. Apprise holds no persistent config, so target URLs are supplied on
+every call: by default a `mailto://` URL derived from the SMTP settings
+above plus `APPRISE_ALERT_TO`, or `APPRISE_ALERT_URLS` used verbatim if set
+— the swap point for moving alerts to Slack/Telegram/etc. without touching
+code. `APPRISE_URL` unset (local dev) disables alerting entirely as a no-op.
+
+Corresponding chart change: `deploy/chart/values.yaml` `cms.env` gains
+`smtpHost`, `smtpPort`, `emailDefaultFrom`, `emailDefaultReplyTo`,
+`appriseUrl`, `appriseAlertTo`, injected as plain (non-secret) env vars by
+`deploy/chart/templates/cms.yaml`, alongside a new hardcoded
+`STRAPI_TELEMETRY_DISABLED: "true"` var. `externalSecrets.cms.mappings`
+gains one `SMTP_SASL_USERS` entry — the only mapping in the list that reads
+a different AWS Secrets Manager secret than the chart-wide `remoteKey`
+(`ssegning/prod/env`): it sets its own `remoteKey: prod/meta/test-app` and
+reads `remoteProperty: smtpd_sasl_users`, the same shared infra secret the
+`mail` relay itself is configured from and that `imagePullSecret.remoteKey`
+already reads — so rotating it in one place keeps the relay and every
+client in sync. `APPRISE_ALERT_URLS` and `SMTP_TLS_REJECT_UNAUTHORIZED` are
+NOT wired into the chart at all — they're env-only overrides available for
+local dev or a future manual Deployment edit, not chart-configurable today.
