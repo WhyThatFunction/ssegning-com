@@ -1,6 +1,7 @@
 import type { Core } from '@strapi/strapi';
 import { createSuperAdminIfMissing } from './bootstrap/admin-user';
 import { publishBundledArticles } from './bootstrap/articles';
+import { migrateArticleBodies } from './bootstrap/migrate-article-bodies';
 import { setPublicPermissions } from './bootstrap/permissions';
 import { seed } from './bootstrap/seed';
 import { notify } from './lib/apprise';
@@ -34,6 +35,12 @@ export default {
       await setPublicPermissions(strapi, PUBLIC_CONTENT_TYPES);
       await seed(strapi);
       await publishBundledArticles(strapi);
+      // One-time Markdown -> Tiptap HTML cutover for posts created before
+      // `post.body` switched custom field types (see
+      // bootstrap/migrate-article-bodies.ts). Runs after
+      // publishBundledArticles so any post it just created (already HTML)
+      // is an idempotent no-op here, not a double conversion.
+      await migrateArticleBodies(strapi);
 
       await notify({
         strapi,
@@ -42,7 +49,7 @@ export default {
         // `info.*` is Strapi's view of apps/cms/package.json, so `info.version`
         // is the CMS app version. NOT `info.strapi` — that key holds the
         // `{ uuid }` object, which stringifies to "[object Object]".
-        body: `CMS bootstrapped successfully at ${process.env.PUBLIC_URL || 'unknown URL'} (cms v${strapi.config.get('info.version', 'unknown')}). Steps run: super admin check, public permissions, seed, article publishing.`,
+        body: `CMS bootstrapped successfully at ${process.env.PUBLIC_URL || 'unknown URL'} (cms v${strapi.config.get('info.version', 'unknown')}). Steps run: super admin check, public permissions, seed, article publishing, article body migration.`,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

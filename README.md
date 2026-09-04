@@ -106,13 +106,23 @@ it never updates one. So editing a published post's title, body, or excerpt
 in the Strapi admin sticks — the next pod restart will not revert it, since
 the importer's create-if-absent check already finds the slug.
 
-Editors can also opt any new field into a Tiptap rich-text editor
-(`@notum-cz/strapi-plugin-tiptap-editor`, registered in
-`apps/cms/config/plugins.ts` with `article` and `minimal` presets). This
-adds a "Rich Text (Tiptap)" field type to the Content-Type Builder
-alongside Strapi's built-in `richtext` — it does not replace it, so
-`post.body` and every other existing schema field is untouched, and none
-of the bundled bootstrap articles were migrated.
+`post.body` is a Tiptap rich-text field (`@notum-cz/strapi-plugin-tiptap-editor`,
+registered in `apps/cms/config/plugins.ts` with the `article` preset) that
+stores HTML, not Strapi's built-in `richtext` Markdown. This was a hard
+cutover: the bundled Markdown articles are converted to HTML with `marked`
+at import time (`apps/cms/src/lib/markdown-to-html.ts`, used from
+`articles.ts`), and posts that already existed under the old `richtext`
+field are converted once, on boot, by
+`apps/cms/src/bootstrap/migrate-article-bodies.ts` — idempotent, so it's a
+no-op once every post is HTML. Fenced ` ```mermaid ` code blocks survive the
+conversion as `<pre><code class="language-mermaid">`, which is both what
+Tiptap's `CodeBlock` node parses/round-trips and what the website's article
+renderer matches on to detect a diagram. Editors can opt any *other* field
+into Tiptap the same way (Content-Type Builder -> "Rich Text (Tiptap)" type,
+`article` or `minimal` preset); every other existing `richtext` field
+(about-page.bio, contact-page.body, home-page.introBody,
+legal-page.imprint/privacy/terms, project.body, service.body) is untouched —
+they hold plain prose, not Markdown, and stay out of scope.
 
 ## Gotchas
 
