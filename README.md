@@ -124,6 +124,14 @@ into Tiptap the same way (Content-Type Builder -> "Rich Text (Tiptap)" type,
 legal-page.imprint/privacy/terms, project.body, service.body) is untouched —
 they hold plain prose, not Markdown, and stay out of scope.
 
+On the `apps/web` side, `post.body` is rendered through
+`src/components/rich-html.tsx`'s `<RichHtml>`, which runs the HTML through
+`sanitize-html` before parsing it — unlike every other body field above,
+which is still Markdown rendered through `<Markdown>` (`react-markdown`,
+which never passes raw HTML through in the first place). See
+`apps/web/README.md`'s "Content rendering" section for the full pipeline
+and why HTML specifically needs a sanitizer here.
+
 ## Gotchas
 
 Each of these cost real production debugging time. Verified against the
