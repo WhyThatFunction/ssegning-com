@@ -73,6 +73,14 @@ directly to the public Internet:
   message outright at submission time. The relay's SASL credentials are
   injected as `SMTP_SASL_USERS`, sourced from AWS Secrets Manager secret
   `prod/meta/test-app` (property `smtpd_sasl_users`) — see the table above.
+  `cms.env.smtpSaslRealm` (→ `SMTP_SASL_REALM`) qualifies the SASL username
+  before authenticating (`user` -> `user@localdomain`) — required because
+  the relay's own config has `mydomain=localdomain` and an EMPTY
+  `smtpd_sasl_local_domain`, so its Cyrus sasldb entry is literally
+  `user@localdomain` and a bare username resolves against `myhostname`
+  instead, failing with `535 5.7.8`. This value tracks the relay's own
+  config, not this chart's — see the comment on `smtpSaslRealm` in
+  `values.yaml`.
 - **Apprise** — `cms.env.appriseUrl` points at the `apprise` Service in the
   `notification-system` namespace
   (`http://apprise.notification-system.svc.cluster.local:8000`). Apprise
@@ -101,9 +109,9 @@ directly to the public Internet:
   (also used by `web.yaml` to build `STRAPI_URL`), `resources`, and the
   plain (non-secret) Strapi env values (`publicUrl`, `adminBackendUrl`,
   `s3Endpoint`, `s3Region`, `s3Bucket`, `s3PublicBase`, `smtpHost`,
-  `smtpPort`, `emailDefaultFrom`, `emailDefaultReplyTo`, `appriseUrl`,
-  `appriseAlertTo` — see "Outbound mail + notifications" below for the
-  latter six).
+  `smtpPort`, `smtpSaslRealm`, `emailDefaultFrom`, `emailDefaultReplyTo`,
+  `appriseUrl`, `appriseAlertTo` — see "Outbound mail + notifications"
+  below for the latter seven).
 - **`postgres.*`** — CNPG `Cluster` name, `instances`, patch-pinned
   `imageName` (see the comment on that key for how it was verified before
   pinning), `database`/`owner`/`port`, `storage.size`/`storageClass`,

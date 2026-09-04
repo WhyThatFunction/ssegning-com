@@ -72,6 +72,7 @@ See `.env.example` for the full list. Summary:
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FIRSTNAME`, `ADMIN_LASTNAME` | One-time super admin bootstrap credentials — only used when zero admin users exist. |
 | `SMTP_HOST`, `SMTP_PORT` | Address of the in-cluster postfix relay (`mail` service, `mail-system` namespace), port 587 (STARTTLS submission). |
 | `SMTP_SASL_USERS` | Raw `user:password` value of the relay's own `smtpd_sasl_users` property (from AWS Secrets Manager in deploy). Parsed tolerantly by `src/lib/smtp-credentials.ts`. |
+| `SMTP_SASL_REALM` | Realm the parsed SASL username is qualified with (`user` -> `user@realm`) before authenticating, by `qualifySaslUser` in `src/lib/smtp-credentials.ts`. Required against the production relay — see that function's doc comment for the exact `smtpd_sasl_local_domain` mechanism. Empty/unset leaves the username unqualified. |
 | `SMTP_TLS_REJECT_UNAUTHORIZED` | Whether to verify the relay's TLS cert; defaults to `false` because it presents a self-signed one and the hop stays inside the cluster network. |
 | `EMAIL_DEFAULT_FROM`, `EMAIL_DEFAULT_REPLY_TO` | Default `from`/`reply-to` for outbound mail. The relay enforces `ALLOWED_SENDER_DOMAINS`, so `EMAIL_DEFAULT_FROM` must stay on a permitted domain. |
 | `APPRISE_URL` | Base URL of the in-cluster Apprise instance (`notification-system` namespace) used for deploy/bootstrap alerts. Unset disables alerting (local dev). |

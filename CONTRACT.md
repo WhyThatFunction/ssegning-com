@@ -196,6 +196,7 @@ Extra CMS env vars:
 
 SMTP_HOST                      (mail.mail-system.svc.cluster.local)
 SMTP_PORT                      (587 — STARTTLS submission, not implicit TLS)
+SMTP_SASL_REALM                (localdomain — qualifies the SASL username before auth, see below)
 EMAIL_DEFAULT_FROM             (must stay inside the relay's ALLOWED_SENDER_DOMAINS)
 EMAIL_DEFAULT_REPLY_TO
 SMTP_TLS_REJECT_UNAUTHORIZED   (optional, default false — relay presents a self-signed cert)
@@ -211,7 +212,18 @@ relay's own `smtpd_sasl_users` property).
 SASL auth via `SMTP_SASL_USERS` (parsed by `src/lib/smtp-credentials.ts`,
 which tolerates it being unset — that's what lets local dev boot with mail
 disabled), TLS verification off by default since the relay's cert is
-self-signed and the hop never leaves the cluster network.
+self-signed and the hop never leaves the cluster network. The parsed
+username is then realm-qualified by `qualifySaslUser` (also in
+`smtp-credentials.ts`) using `SMTP_SASL_REALM` — added after a live `535
+5.7.8 authentication failed` was diagnosed empirically post-deploy: the
+relay's `mydomain=localdomain` plus an EMPTY `smtpd_sasl_local_domain`
+means its Cyrus sasldb entry is literally `user@localdomain`, and a bare
+username resolves against `myhostname` (`mail-0`) instead, never matching.
+Confirmed by testing all three variants against the live relay: bare
+username failed 535, `user@localdomain` authenticated OK, `user@mail-0`
+failed 535. `apps/cms/src/lib/apprise.ts` applies the same qualification
+to the username it derives the `mailto://` alert URL from, since it
+authenticates against the same relay.
 `apps/cms/src/lib/apprise.ts` posts to the stateless in-cluster Apprise
 instance from `bootstrap()` in `src/index.ts`: a `success` notification when
 bootstrap completes, a `failure` one if it throws — the error is always
@@ -223,8 +235,9 @@ above plus `APPRISE_ALERT_TO`, or `APPRISE_ALERT_URLS` used verbatim if set
 code. `APPRISE_URL` unset (local dev) disables alerting entirely as a no-op.
 
 Corresponding chart change: `deploy/chart/values.yaml` `cms.env` gains
-`smtpHost`, `smtpPort`, `emailDefaultFrom`, `emailDefaultReplyTo`,
-`appriseUrl`, `appriseAlertTo`, injected as plain (non-secret) env vars by
+`smtpHost`, `smtpPort`, `smtpSaslRealm`, `emailDefaultFrom`,
+`emailDefaultReplyTo`, `appriseUrl`, `appriseAlertTo`, injected as plain
+(non-secret) env vars by
 `deploy/chart/templates/cms.yaml`, alongside a new hardcoded
 `STRAPI_TELEMETRY_DISABLED: "true"` var. `externalSecrets.cms.mappings`
 gains one `SMTP_SASL_USERS` entry — the only mapping in the list that reads

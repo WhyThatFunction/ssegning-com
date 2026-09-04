@@ -1,5 +1,5 @@
 import type { Core } from '@strapi/strapi';
-import { parseSaslCredentials } from './smtp-credentials';
+import { parseSaslCredentials, qualifySaslUser } from './smtp-credentials';
 
 export type AppriseNotificationType = 'info' | 'success' | 'warning' | 'failure';
 
@@ -51,7 +51,15 @@ function deriveAlertUrls(): string | null {
   }
 
   const from = process.env.EMAIL_DEFAULT_FROM || 'no-reply@ssegning.com';
-  const user = encodeURIComponent(credentials.user);
+  // Same realm-qualification as config/plugins.ts's nodemailer transport —
+  // this authenticates against the SAME relay, with the SAME sasldb entry
+  // requirement (see qualifySaslUser's doc comment in smtp-credentials.ts).
+  // Qualifying it means `user` now definitely contains a literal `@`, on
+  // top of whatever the raw SASL username already had — encodeURIComponent
+  // below is what keeps that from being parsed as the mailto:// userinfo/
+  // host separator; do not drop it.
+  const qualifiedUser = qualifySaslUser(credentials.user, process.env.SMTP_SASL_REALM);
+  const user = encodeURIComponent(qualifiedUser);
   const pass = encodeURIComponent(credentials.pass);
   const to = encodeURIComponent(alertTo);
   const fromParam = encodeURIComponent(from);

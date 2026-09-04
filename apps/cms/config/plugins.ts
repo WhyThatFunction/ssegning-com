@@ -1,4 +1,4 @@
-import { parseSaslCredentials } from '../src/lib/smtp-credentials';
+import { parseSaslCredentials, qualifySaslUser } from '../src/lib/smtp-credentials';
 
 export default ({ env }) => {
   // Present-but-empty `auth` is treated differently by nodemailer than a
@@ -6,6 +6,13 @@ export default ({ env }) => {
   // actually parse — this is what lets local dev boot with SMTP_SASL_USERS
   // unset.
   const smtpCredentials = parseSaslCredentials(env('SMTP_SASL_USERS', ''));
+  // Realm-qualify the SASL username (see qualifySaslUser's doc comment for
+  // the empty-smtpd_sasl_local_domain mechanism that makes this mandatory
+  // against the production relay) — a no-op when SMTP_SASL_REALM is unset.
+  const smtpAuth = smtpCredentials && {
+    user: qualifySaslUser(smtpCredentials.user, env('SMTP_SASL_REALM', '')),
+    pass: smtpCredentials.pass,
+  };
 
   return {
     email: {
@@ -30,7 +37,7 @@ export default ({ env }) => {
             // trusted cert with a matching SAN first, not just the flag.
             rejectUnauthorized: env.bool('SMTP_TLS_REJECT_UNAUTHORIZED', false),
           },
-          ...(smtpCredentials && { auth: smtpCredentials }),
+          ...(smtpAuth && { auth: smtpAuth }),
         },
         settings: {
           // The relay enforces ALLOWED_SENDER_DOMAINS — EMAIL_DEFAULT_FROM
