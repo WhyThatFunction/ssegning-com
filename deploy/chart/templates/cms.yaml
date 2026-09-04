@@ -102,6 +102,8 @@ spec:
               value: {{ .Values.cms.env.smtpHost | quote }}
             - name: SMTP_PORT
               value: {{ .Values.cms.env.smtpPort | quote }}
+            - name: SMTP_SASL_REALM
+              value: {{ .Values.cms.env.smtpSaslRealm | quote }}
             - name: EMAIL_DEFAULT_FROM
               value: {{ .Values.cms.env.emailDefaultFrom | quote }}
             - name: EMAIL_DEFAULT_REPLY_TO

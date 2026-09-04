@@ -70,9 +70,9 @@ See `.env.example` for the full list. Summary:
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BASE` | MinIO/S3 upload provider (path-style). |
 | `WEB_REVALIDATE_URL`, `WEB_REVALIDATE_SECRET` | Used by `apps/web` for on-demand ISR revalidation (not consumed by the CMS itself, kept here for reference). |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FIRSTNAME`, `ADMIN_LASTNAME` | One-time super admin bootstrap credentials — only used when zero admin users exist. |
-| `SMTP_HOST`, `SMTP_PORT` | Address of the in-cluster postfix relay (`mail` service, `mail-system` namespace), port 587 (STARTTLS submission). |
+| `SMTP_HOST`, `SMTP_PORT` | Address of the in-cluster postfix relay (`mail` service, `mail-system` namespace), port 587. TLS is disabled on this hop — see below. |
 | `SMTP_SASL_USERS` | Raw `user:password` value of the relay's own `smtpd_sasl_users` property (from AWS Secrets Manager in deploy). Parsed tolerantly by `src/lib/smtp-credentials.ts`. |
-| `SMTP_TLS_REJECT_UNAUTHORIZED` | Whether to verify the relay's TLS cert; defaults to `false` because it presents a self-signed one and the hop stays inside the cluster network. |
+| `SMTP_SASL_REALM` | Realm the parsed SASL username is qualified with (`user` -> `user@realm`) before authenticating, by `qualifySaslUser` in `src/lib/smtp-credentials.ts`. Required against the production relay — see that function's doc comment for the exact `smtpd_sasl_local_domain` mechanism. Empty/unset leaves the username unqualified. |
 | `EMAIL_DEFAULT_FROM`, `EMAIL_DEFAULT_REPLY_TO` | Default `from`/`reply-to` for outbound mail. The relay enforces `ALLOWED_SENDER_DOMAINS`, so `EMAIL_DEFAULT_FROM` must stay on a permitted domain. |
 | `APPRISE_URL` | Base URL of the in-cluster Apprise instance (`notification-system` namespace) used for deploy/bootstrap alerts. Unset disables alerting (local dev). |
 | `APPRISE_ALERT_TO` | Recipient address used when deriving the default `mailto://` alert URL from the `SMTP_*` settings above. |
@@ -85,7 +85,7 @@ else.
 ### Mail and alerting paths
 
 Outbound email (`config/plugins.ts`, `@strapi/provider-email-nodemailer`)
-goes Strapi → the in-cluster postfix relay on port 587 (STARTTLS,
+goes Strapi → the in-cluster postfix relay on port 587 (no TLS,
 SASL-authenticated) → postfix's own upstream smart host. Deploy/bootstrap
 alerts (`src/lib/apprise.ts`) go from `bootstrap()` in `src/index.ts` to the
 in-cluster Apprise instance's `/notify` endpoint, which is stateless and

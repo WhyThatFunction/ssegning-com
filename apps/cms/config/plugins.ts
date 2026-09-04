@@ -1,4 +1,4 @@
-import { parseSaslCredentials } from '../src/lib/smtp-credentials';
+import { parseSaslCredentials, qualifySaslUser } from '../src/lib/smtp-credentials';
 
 export default ({ env }) => {
   // Present-but-empty `auth` is treated differently by nodemailer than a
@@ -6,6 +6,13 @@ export default ({ env }) => {
   // actually parse — this is what lets local dev boot with SMTP_SASL_USERS
   // unset.
   const smtpCredentials = parseSaslCredentials(env('SMTP_SASL_USERS', ''));
+  // Realm-qualify the SASL username (see qualifySaslUser's doc comment for
+  // the empty-smtpd_sasl_local_domain mechanism that makes this mandatory
+  // against the production relay) — a no-op when SMTP_SASL_REALM is unset.
+  const smtpAuth = smtpCredentials && {
+    user: qualifySaslUser(smtpCredentials.user, env('SMTP_SASL_REALM', '')),
+    pass: smtpCredentials.pass,
+  };
 
   return {
     email: {
@@ -14,23 +21,30 @@ export default ({ env }) => {
         providerOptions: {
           host: env('SMTP_HOST'),
           port: env.int('SMTP_PORT', 587),
-          // Port 587 is STARTTLS submission, not implicit TLS — secure must
-          // stay false and requireTLS true, or nodemailer either fails to
-          // connect or sends the AUTH handshake in the clear.
+          // TLS is deliberately OFF on this hop. `secure: false` rules out
+          // implicit TLS, and `ignoreTLS: true` stops nodemailer upgrading
+          // via STARTTLS even though the relay advertises it.
+          //
+          // The certificate the relay presents could never be verified
+          // anyway — it is self-signed with subject `CN=localhost` (checked
+          // against the live service on 2026-09-04, valid to 2035), so it
+          // fails on both the untrusted issuer and a CN that can never match
+          // mail.mail-system.svc.cluster.local. Encrypting to a certificate
+          // you cannot authenticate buys confidentiality against an attacker
+          // who is already inside the pod network, and nothing else.
+          //
+          // What makes this acceptable is the shape of the hop: CMS pod ->
+          // mail-system Service, entirely inside the cluster. The relay does
+          // the real, verified TLS on the leg that actually leaves the
+          // network, when it hands off to its upstream smart host.
+          //
+          // The relay permits this: `smtpd_tls_auth_only = no`, and a
+          // plaintext AUTH was confirmed working against it on 2026-09-04.
+          // If that ever flips to `yes`, AUTH stops being offered before
+          // STARTTLS and this configuration breaks with a 535.
           secure: false,
-          requireTLS: true,
-          tls: {
-            // The in-cluster postfix relay presents a SELF-SIGNED cert whose
-            // subject is `CN=localhost` (verified against the live service on
-            // 2026-09-04: self-signed, valid to 2035). So verification would
-            // fail twice over — untrusted issuer, and a CN that can never
-            // match mail.mail-system.svc.cluster.local. The hop never leaves
-            // the cluster network, so it is off by default; flipping
-            // SMTP_TLS_REJECT_UNAUTHORIZED on requires giving the relay a
-            // trusted cert with a matching SAN first, not just the flag.
-            rejectUnauthorized: env.bool('SMTP_TLS_REJECT_UNAUTHORIZED', false),
-          },
-          ...(smtpCredentials && { auth: smtpCredentials }),
+          ignoreTLS: true,
+          ...(smtpAuth && { auth: smtpAuth }),
         },
         settings: {
           // The relay enforces ALLOWED_SENDER_DOMAINS — EMAIL_DEFAULT_FROM

@@ -88,7 +88,8 @@ cms:
     # postfix relay pod (mail-0) is the one that terminates the actual
     # outbound TLS connection to whatever upstream smart host it's
     # configured with — the CMS never talks to the public Internet for
-    # mail. Port 587 is the STARTTLS submission port, which means the
+    # mail. Port 587 is the submission port; TLS is disabled on this hop
+    # (see apps/cms/config/plugins.ts for why), which means the
     # connection starts in plaintext and upgrades in-band, and — unlike
     # port 25 relaying — requires SASL authentication; that's what
     # SMTP_SASL_USERS (below, under externalSecrets.cms.mappings) supplies.
@@ -101,6 +102,18 @@ cms:
     # added on the relay side first.
     smtpHost: mail.mail-system.svc.cluster.local
     smtpPort: 587
+    # Realm the SASL username is qualified with before authenticating
+    # (user -> user@localdomain) — see the mechanism comment on
+    # qualifySaslUser in apps/cms/src/lib/smtp-credentials.ts. Required
+    # because the relay's own config has `mydomain = localdomain` and an
+    # EMPTY `smtpd_sasl_local_domain`: its Cyrus sasldb stores exactly one
+    # entry, literally `user@localdomain`, and a bare username resolves
+    # against `myhostname` (`mail-0`) instead, failing auth with a
+    # `535 5.7.8`. This value MUST track the relay's own config in
+    # home-os — if the relay ever sets `smtpd_sasl_local_domain` to a
+    # non-empty value, or changes `mydomain` off `localdomain`, this needs
+    # to change with it, or outbound mail breaks again.
+    smtpSaslRealm: localdomain
     emailDefaultFrom: no-reply@ssegning.com
     emailDefaultReplyTo: hello@ssegning.com
     # Apprise (apprise.notification-system.svc.cluster.local:8000, also
