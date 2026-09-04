@@ -78,6 +78,43 @@ cms:
     s3Region: us-east-1
     s3Bucket: ssegning-uploads
     s3PublicBase: https://s3.ssegning.me/ssegning-uploads
+    # Outbound mail + notifications, both routed through in-cluster relays
+    # rather than talking to any upstream provider directly.
+    #
+    # smtpHost/smtpPort point at the `mail` Service in the `mail-system`
+    # namespace (mail.mail-system.svc.cluster.local:587 — confirmed live,
+    # that Service exposes ONLY 587, no 25/465). This is plain in-cluster
+    # HTTP-equivalent traffic: it never leaves the cluster network, and the
+    # postfix relay pod (mail-0) is the one that terminates the actual
+    # outbound TLS connection to whatever upstream smart host it's
+    # configured with — the CMS never talks to the public Internet for
+    # mail. Port 587 is the STARTTLS submission port, which means the
+    # connection starts in plaintext and upgrades in-band, and — unlike
+    # port 25 relaying — requires SASL authentication; that's what
+    # SMTP_SASL_USERS (below, under externalSecrets.cms.mappings) supplies.
+    #
+    # emailDefaultFrom MUST be a domain the relay is actually willing to
+    # relay for. The postfix relay is configured with an
+    # ALLOWED_SENDER_DOMAINS allow-list, and a From address outside it gets
+    # a hard postfix rejection at submission time, not a soft bounce later —
+    # so changing this value requires confirming the new domain is also
+    # added on the relay side first.
+    smtpHost: mail.mail-system.svc.cluster.local
+    smtpPort: 587
+    emailDefaultFrom: no-reply@ssegning.com
+    emailDefaultReplyTo: hello@ssegning.com
+    # Apprise (apprise.notification-system.svc.cluster.local:8000, also
+    # in-cluster only) is stateless: it has no persistent notion of "this
+    # app's configured channels" the way e.g. a webhook-management SaaS
+    # would. Every request carries its own target notification URL(s), so
+    # appriseAlertTo isn't a channel identifier stored in Apprise — it's
+    # the address the CMS itself passes as APPRISE_ALERT_TO on each call.
+    # That makes this the swap point for moving alerts off email later
+    # (Slack, PagerDuty, ntfy, ...): change appriseAlertTo/APPRISE_ALERT_TO
+    # to a different Apprise-supported URL scheme and nothing else in this
+    # chart needs to move.
+    appriseUrl: http://apprise.notification-system.svc.cluster.local:8000
+    appriseAlertTo: hello@ssegning.com
 postgres:
   name: ssegning-pg
   instances: 1
@@ -181,6 +218,19 @@ externalSecrets:
         remoteProperty: admin_firstname
       - key: ADMIN_LASTNAME
         remoteProperty: admin_lastname
+      # The ONE mapping in this list that reads a different AWS Secrets
+      # Manager secret than the rest (via the optional per-mapping
+      # `remoteKey` override in templates/external-secrets.yaml). This is
+      # the shared infra credential the `mail` SMTP relay itself is
+      # configured with (its own smtpd_sasl_users property) — not
+      # something owned by this app — so keeping it in prod/meta/test-app
+      # and reading it from there means rotating it in one place keeps the
+      # relay and every client of it in sync. It's the same
+      # prod/meta/test-app secret imagePullSecret.remoteKey (below) already
+      # reads.
+      - key: SMTP_SASL_USERS
+        remoteKey: prod/meta/test-app
+        remoteProperty: smtpd_sasl_users
   # Next.js (web) runtime secret. Must equal the CMS's WEB_REVALIDATE_SECRET
   # (both map from the same `revalidate_secret` remote property) — the web
   # app's /api/revalidate route checks incoming requests against this value.

@@ -98,6 +98,21 @@ spec:
             # web.serviceName/web.port.
             - name: WEB_REVALIDATE_URL
               value: {{ printf "http://%s:%v/api/revalidate" .Values.web.serviceName .Values.web.port | quote }}
+            - name: SMTP_HOST
+              value: {{ .Values.cms.env.smtpHost | quote }}
+            - name: SMTP_PORT
+              value: {{ .Values.cms.env.smtpPort | quote }}
+            - name: EMAIL_DEFAULT_FROM
+              value: {{ .Values.cms.env.emailDefaultFrom | quote }}
+            - name: EMAIL_DEFAULT_REPLY_TO
+              value: {{ .Values.cms.env.emailDefaultReplyTo | quote }}
+            - name: APPRISE_URL
+              value: {{ .Values.cms.env.appriseUrl | quote }}
+            - name: APPRISE_ALERT_TO
+              value: {{ .Values.cms.env.appriseAlertTo | quote }}
+            # Opts this deployment out of Strapi's anonymous usage telemetry.
+            - name: STRAPI_TELEMETRY_DISABLED
+              value: "true"
             # Every secret-backed env var (APP_KEYS, ..., and the ADMIN_*
             # super-admin bootstrap vars from CONTRACT.md ADDENDUM 1) comes
             # straight from the externalSecrets.cms.mappings list in
