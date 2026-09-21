@@ -130,7 +130,22 @@ cms:
     appriseAlertTo: hello@ssegning.com
 postgres:
   name: ssegning-pg
-  instances: 1
+  # 2, not 1. A single instance makes any node-level event a full database
+  # outage: on 2026-09-21 both Proxmox hosts were power-cycled, and while
+  # vaam-pg rode it out on its second instance (primary simply stayed on
+  # vaam-pg-2), ssegning-pg went to 0 ready and took ssegning-cms into
+  # CrashLoopBackOff with it until the pod rescheduled and pulled its
+  # 276MB image again.
+  #
+  # Backups were never the gap - barman-cloud had a completed backup from
+  # 03:00 that morning - but restoring loses hours and takes manual work,
+  # where a second instance just fails over. CNPG streams from the primary
+  # and promotes automatically.
+  #
+  # Cost: one more 10Gi Longhorn PVC. Checked at the time - 655Gi available
+  # across the three storage nodes, and the `longhorn` StorageClass is
+  # numberOfReplicas=2, so this reserves ~20Gi of raw capacity.
+  instances: 2
   # Patch-pinned, not a floating major/OS-flavour tag, so a routine pod
   # restart never silently pulls a newer Postgres minor onto a live
   # database. Verified live against
