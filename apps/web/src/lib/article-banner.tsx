@@ -1,7 +1,21 @@
 import { ImageResponse } from 'next/og';
 
-/** 1200x630 — the standard social-card ratio, which also reads as a wide hero. */
-export const BANNER_SIZE = { width: 1200, height: 630 };
+/**
+ * The two shapes this renders, and why there are two.
+ *
+ * `social` is the Open Graph card. It carries the title because that image is
+ * the whole of what a reader sees in a feed — there is no page around it.
+ *
+ * `page` is the banner on the article itself, where the title is already the
+ * <h1> directly below. Repeating it there is redundant, and obviously so on a
+ * phone, so this variant drops it and becomes a band: shorter, texture and
+ * two small anchors, closer to what a publication actually puts above an
+ * article.
+ */
+export const SOCIAL_SIZE = { width: 1200, height: 630 };
+export const PAGE_BANNER_SIZE = { width: 1200, height: 420 };
+
+export type BannerVariant = 'social' | 'page';
 
 // Same path as src/components/brand-mark.tsx, src/app/icon.svg and
 // src/app/opengraph-image.tsx. Kept as a literal for the same reason they do:
@@ -68,12 +82,16 @@ export function renderArticleBanner({
   slug,
   kicker,
   readingMinutes,
+  variant,
 }: {
   title: string;
   slug: string;
   kicker: string;
   readingMinutes?: number | null;
+  variant: BannerVariant;
 }): ImageResponse {
+  const isSocial = variant === 'social';
+  const size = isSocial ? SOCIAL_SIZE : PAGE_BANNER_SIZE;
   const h = hashString(slug);
   const rotation = (h % 25) - 12;
   const ringCount = 2 + (h % 2);
@@ -97,7 +115,7 @@ export function renderArticleBanner({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        padding: '72px 80px',
+        padding: isSocial ? '72px 80px' : '52px 64px',
         backgroundColor: CANVAS,
         color: INK,
         fontFamily: 'sans-serif',
@@ -106,10 +124,15 @@ export function renderArticleBanner({
     >
       {/* biome-ignore lint/a11y/noSvgWithoutTitle: rasterized to PNG by Satori — there is no accessibility tree inside the image, and the <img> that renders it carries the alt text. */}
       <svg
-        width="820"
-        height="820"
+        width={isSocial ? 820 : 680}
+        height={isSocial ? 820 : 680}
         viewBox="0 0 64 64"
-        style={{ position: 'absolute', right: -210, top: -95 + offsetY, opacity: 0.1 }}
+        style={{
+          position: 'absolute',
+          right: isSocial ? -210 : -170,
+          top: (isSocial ? -95 : -130) + offsetY,
+          opacity: 0.1,
+        }}
       >
         <g transform={`rotate(${rotation} 32 32)`}>
           {rings.map((ring) => (
@@ -144,18 +167,20 @@ export function renderArticleBanner({
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          fontSize: titleFontSize(title),
-          fontWeight: 600,
-          lineHeight: 1.12,
-          letterSpacing: -1,
-          maxWidth: 880,
-        }}
-      >
-        {title}
-      </div>
+      {isSocial ? (
+        <div
+          style={{
+            display: 'flex',
+            fontSize: titleFontSize(title),
+            fontWeight: 600,
+            lineHeight: 1.12,
+            letterSpacing: -1,
+            maxWidth: 880,
+          }}
+        >
+          {title}
+        </div>
+      ) : null}
 
       <div style={{ display: 'flex', alignItems: 'center', fontSize: 20, color: INK_MUTED }}>
         <div style={{ display: 'flex', width: 64, height: 1, backgroundColor: BORDER }} />
@@ -170,6 +195,6 @@ export function renderArticleBanner({
         ) : null}
       </div>
     </div>,
-    { ...BANNER_SIZE },
+    { ...size },
   );
 }

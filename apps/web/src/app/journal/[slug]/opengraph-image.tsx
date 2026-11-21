@@ -1,0 +1,34 @@
+import { notFound } from 'next/navigation';
+
+import { renderArticleBanner, SOCIAL_SIZE } from '@/lib/article-banner';
+import { getPostBySlug } from '@/lib/strapi';
+
+export const size = SOCIAL_SIZE;
+export const contentType = 'image/png';
+export const alt = 'Article banner';
+
+/**
+ * The Open Graph card for one article.
+ *
+ * Unlike the on-page banner (./banner/route.tsx) this one carries the title,
+ * because in a feed the image is the whole of what a reader sees — there is no
+ * page around it to supply the heading. Next wires this into the page's
+ * metadata automatically, so the hashed filename it generates never has to be
+ * referenced from markup.
+ */
+export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const lookup = await getPostBySlug(slug);
+
+  if (lookup.status !== 'found') notFound();
+
+  const post = lookup.value;
+
+  return renderArticleBanner({
+    title: post.title,
+    slug,
+    kicker: 'Journal',
+    readingMinutes: post.readingMinutes,
+    variant: 'social',
+  });
+}
