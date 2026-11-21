@@ -163,7 +163,23 @@ export interface StrapiSingleResponse<T> {
   meta: unknown;
 }
 
+/**
+ * Strapi's list-response envelope. `meta.pagination` is typed (rather than
+ * `unknown`) because `strapiFetchAll` reads `pageCount` to know whether it has
+ * seen every record — see its doc comment for why that matters.
+ *
+ * Optional throughout: `withCount` is on in the CMS (`apps/cms/config/api.ts`),
+ * but a caller that fetches a single record by slug does not need the block to
+ * be there, and nothing should crash if it is absent.
+ */
 export interface StrapiListResponse<T> {
   data: T[];
-  meta: unknown;
+  meta?: {
+    pagination?: {
+      page?: number;
+      pageSize?: number;
+      pageCount?: number;
+      total?: number;
+    };
+  };
 }
