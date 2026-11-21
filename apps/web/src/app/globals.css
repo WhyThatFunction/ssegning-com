@@ -276,7 +276,7 @@ body {
   height: auto;
 }
 
-/* Diagrams, images and tables break out wider than the measure.
+/* Diagrams, images, tables and code blocks break out wider than the measure.
    
    `.prose` is capped at 40rem (640px) because that is a comfortable reading
    width for text — but a flowchart or a screenshot is not text, and squeezing
@@ -296,13 +296,20 @@ body {
    content without the page itself gaining a horizontal scrollbar. The canvas
    and tables keep their own `overflow-x: auto` for anything wider still.
    
+   `pre` is matched as a DIRECT child only. Article code blocks are direct
+   children of `.prose`, but `.mermaid-diagram` also contains a `<pre>` — the
+   fallback shown until mermaid renders, or if it fails. A descendant selector
+   would bleed that one too, inside an element already bled, offsetting it
+   twice.
+   
    This rule comes after `.prose table { width: 100% }` above on purpose: a
    table is already `display: block` so it can scroll, which means it takes a
    width like any block and the later rule wins. A table that is still wider
    than the bleed scrolls inside it rather than widening the page. */
 .prose .mermaid-diagram,
 .prose img,
-.prose table {
+.prose table,
+.prose > pre {
   position: relative;
   left: 50%;
   width: min(calc(100% + 200px), calc(100vw - 24px));

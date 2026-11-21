@@ -30,6 +30,5 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     kicker: 'Journal',
     subtitle: post.excerpt,
     footerNote: post.readingMinutes ? `${post.readingMinutes} min read` : null,
-    variant: 'social',
   });
 }

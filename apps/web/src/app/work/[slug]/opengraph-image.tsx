@@ -21,6 +21,5 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     seed: slug,
     kicker: 'Work',
     subtitle: project.summary,
-    variant: 'social',
   });
 }
