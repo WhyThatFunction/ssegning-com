@@ -46,3 +46,13 @@ minimumReleaseAgeExclude:
 overrides:
   '@types/react': 19.2.18
   '@types/react-dom': 19.2.5
+
+# The Strapi Tiptap plugin (1.2.4, and still 1.3.0) builds its editor from
+# StarterKit, which in Tiptap 3 already contains Underline and Gapcursor, then
+# pushes both again -- the admin console logs a duplicate-extension warning
+# for each. The patch turns them off inside StarterKit so each is added once
+# (Underline only when a preset enables it). Bumping the plugin makes pnpm
+# refuse the now-unused patch: check the new version still needs it.
+# Both Dockerfiles copy patches/ before `pnpm install`.
+patchedDependencies:
+  '@notum-cz/strapi-plugin-tiptap-editor@1.2.4': patches/@notum-cz__strapi-plugin-tiptap-editor@1.2.4.patch

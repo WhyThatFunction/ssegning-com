@@ -33,6 +33,8 @@ COPY apps/cms/package.json apps/cms/package.json
 # new workspace package has to be added to BOTH files or the other image
 # fails its install. Grep for `pnpm-workspace.yaml` before adding one.
 COPY packages/tiptap-schema/package.json packages/tiptap-schema/package.json
+# pnpm-workspace.yaml patches a dependency; --frozen-lockfile fails without the file.
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-alpine AS builder
@@ -61,6 +63,9 @@ COPY . .
 # a new failure mode.
 ARG STRAPI_URL
 ENV STRAPI_URL=$STRAPI_URL
+# Commit SHA, read by next.config.ts to version the service worker per deploy.
+ARG GIT_SHA
+ENV GIT_SHA=$GIT_SHA
 ENV NODE_ENV=production
 RUN pnpm --filter @ssegning/tiptap-schema build
 RUN pnpm --filter @ssegning/web build

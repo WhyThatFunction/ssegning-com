@@ -49,6 +49,9 @@ function slugify(text: string): string {
   );
 }
 
+/** Element ids the article page renders outside the body. */
+const RESERVED_IDS = ['main-content', 'mobile-nav-panel', 'more-from-the-journal'];
+
 /**
  * Turns a stored post body into renderable HTML, and gives every `<h2>` an id
  * so the article can link to its own sections.
@@ -71,7 +74,10 @@ export function prepareArticle(body: string): PreparedArticle {
   const source = looksLikeTiptapJson(body) ? tiptapJsonToHtml(body) : body;
 
   const headings: ArticleHeading[] = [];
-  const seen = new Map<string, number>();
+  // Seeded with ids the page itself already uses (layout, header, related
+  // posts), so a section titled "Main content" becomes `main-content-2`
+  // instead of a second element with the skip link's target id.
+  const seen = new Map<string, number>(RESERVED_IDS.map((id) => [id, 1]));
 
   const html = source.replace(/<h2(?:\s[^>]*)?>([\s\S]*?)<\/h2>/g, (_whole, inner: string) => {
     const text = decodeEntities(inner.replace(/<[^>]+>/g, '')).trim();

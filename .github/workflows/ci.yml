@@ -121,6 +121,7 @@ jobs:
           # such ARG and ignores it.
           build-args: |
             STRAPI_URL=https://cms.ssegning.com
+            GIT_SHA=${{ github.sha }}
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

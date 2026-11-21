@@ -104,10 +104,10 @@ export default ({ env }) => {
     // headings (## / ###), bold/italic, inline code, fenced code blocks
     // (including ```mermaid diagrams), block quotes, ordered/unordered
     // lists, links, and tables (6 of the 12 articles). They don't use
-    // underline, strikethrough, super/subscript, text alignment, text/
-    // highlight colors, or inline images (the `post.cover` media field
-    // covers imagery today), so those stay off both presets below —
-    // add them deliberately if a real piece of content needs them.
+    // super/subscript, text alignment, or text/highlight colors, so those
+    // stay off the presets below — add them deliberately if a real piece of
+    // content needs them. Underline and strikethrough are on: cheap, and the
+    // site renders both.
     'tiptap-editor': {
       config: {
         presets: {
