@@ -70,7 +70,12 @@ export async function generateMetadata({
   return {
     title: post.seo?.metaTitle ?? post.title,
     description,
-    openGraph: { title: post.title, description, type: 'article' },
+    openGraph: {
+      title: post.title,
+      description,
+      type: 'article',
+      images: [{ url: `/journal/${slug}/banner`, width: 1200, height: 630, alt: post.title }],
+    },
   };
 }
 
@@ -103,18 +108,22 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           {post.title}
         </h1>
 
-        {coverUrl ? (
-          <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-card border border-border">
-            <Image
-              src={coverUrl}
-              alt={mediaAlt(post.cover, post.title)}
-              fill
-              sizes="100vw"
-              priority
-              className="object-cover"
-            />
-          </div>
-        ) : null}
+        {/* An uploaded cover wins; otherwise the generated banner (see
+            lib/article-banner.tsx), so every article has one from the moment
+            it exists. `unoptimized` because the source is already a
+            server-rendered PNG at exactly this size — putting it through the
+            image optimizer would re-encode it for nothing. */}
+        <div className="relative mt-8 aspect-[1200/630] overflow-hidden rounded-card border border-border">
+          <Image
+            src={coverUrl ?? `/journal/${slug}/banner`}
+            alt={coverUrl ? mediaAlt(post.cover, post.title) : post.title}
+            fill
+            sizes="100vw"
+            priority
+            unoptimized={!coverUrl}
+            className="object-cover"
+          />
+        </div>
 
         {post.body ? (
           <div className="mt-10">
