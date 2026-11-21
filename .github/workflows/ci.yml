@@ -116,6 +116,11 @@ jobs:
         with:
           context: .
           file: apps/${{ matrix.name }}/Dockerfile
+          # Read only by apps/web's build (its Dockerfile explains why the
+          # runtime in-cluster URL cannot be used here). apps/cms declares no
+          # such ARG and ignores it.
+          build-args: |
+            STRAPI_URL=https://cms.ssegning.com
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

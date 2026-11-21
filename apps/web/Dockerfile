@@ -42,6 +42,25 @@ ENV PNPM_HOME="/pnpm" \
 RUN corepack enable
 COPY --from=deps /app ./
 COPY . .
+
+# The CMS this build reads its content from.
+#
+# WHY THIS EXISTS: every page in apps/web is ISR, and every one of them falls
+# back to hand-written copy in src/content/fallback when Strapi is
+# unreachable. The build runs in CI, where the runtime STRAPI_URL
+# (http://ssegning-cms:1337) does not resolve — so every prerendered page in
+# the image was a render of the FALLBACK content, not of the site. Next then
+# serves that baked render to the first visitor after each revalidation
+# window, which on a low-traffic site is a large share of them: the Work page
+# shipped linking three case studies that exist nowhere in the CMS, while the
+# sitemap listed the three real ones.
+#
+# Pointing the build at the public CMS makes the image contain the real site.
+# It fails soft exactly as before: if the CMS is unreachable from the runner
+# the build still succeeds and bakes fallback, which is today's behaviour, not
+# a new failure mode.
+ARG STRAPI_URL
+ENV STRAPI_URL=$STRAPI_URL
 ENV NODE_ENV=production
 RUN pnpm --filter @ssegning/tiptap-schema build
 RUN pnpm --filter @ssegning/web build
