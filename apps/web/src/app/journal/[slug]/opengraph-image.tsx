@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { renderArticleBanner, SOCIAL_SIZE } from '@/lib/article-banner';
+import { renderBanner, SOCIAL_SIZE } from '@/lib/article-banner';
 import { getPostBySlug } from '@/lib/strapi';
 
 export const size = SOCIAL_SIZE;
@@ -24,11 +24,12 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const post = lookup.value;
 
-  return renderArticleBanner({
+  return renderBanner({
     title: post.title,
-    slug,
+    seed: slug,
     kicker: 'Journal',
-    readingMinutes: post.readingMinutes,
+    subtitle: post.excerpt,
+    footerNote: post.readingMinutes ? `${post.readingMinutes} min read` : null,
     variant: 'social',
   });
 }

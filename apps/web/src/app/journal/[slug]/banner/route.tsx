@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { renderArticleBanner } from '@/lib/article-banner';
+import { renderBanner } from '@/lib/article-banner';
 import { getPostBySlug } from '@/lib/strapi';
 
 /**
@@ -27,11 +27,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
 
   const post = lookup.value;
 
-  return renderArticleBanner({
+  return renderBanner({
     title: post.title,
-    slug,
+    seed: slug,
     kicker: 'Journal',
-    readingMinutes: post.readingMinutes,
+    subtitle: post.excerpt,
+    footerNote: post.readingMinutes ? `${post.readingMinutes} min read` : null,
     variant: 'page',
   });
 }

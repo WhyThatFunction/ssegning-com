@@ -46,6 +46,19 @@ function hashString(value: string): number {
 }
 
 /**
+ * Keeps the subtitle to one or two lines. An article excerpt runs to 200
+ * characters, which would push the footer off a 630px canvas — and Satori has
+ * no overflow handling to catch that, it just draws past the edge.
+ */
+function clampSubtitle(subtitle: string): string {
+  const limit = 104;
+  if (subtitle.length <= limit) return subtitle;
+  const cut = subtitle.slice(0, limit);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${cut.slice(0, lastSpace > 0 ? lastSpace : limit)}…`;
+}
+
+/**
  * Title size, stepped by length so a long title wraps to at most three lines
  * instead of overflowing the canvas. Satori has no text measurement to lean
  * on, so this is done by character count rather than by measuring.
@@ -58,7 +71,7 @@ function titleFontSize(title: string): number {
 }
 
 /**
- * Generates an article's banner.
+ * Generates a banner.
  *
  * WHY GENERATED: every post's `cover` field is empty, and hand-sourcing
  * artwork for each article is work that does not scale with writing them. A
@@ -77,22 +90,27 @@ function titleFontSize(title: string): number {
  * hue would give more obvious variety and would also mean the site's one accent
  * colour stops meaning anything. The banners are meant to look like a set.
  */
-export function renderArticleBanner({
+export function renderBanner({
   title,
-  slug,
+  seed,
   kicker,
-  readingMinutes,
+  subtitle,
+  footerNote,
   variant,
 }: {
   title: string;
-  slug: string;
+  /** Anything stable — a slug, a route key. Only ever used to pick the geometry. */
+  seed: string;
   kicker: string;
-  readingMinutes?: number | null;
+  /** A second line under the title. Used by page cards, which have no body text. */
+  subtitle?: string | null;
+  /** Trailing footer item, e.g. "10 min read". */
+  footerNote?: string | null;
   variant: BannerVariant;
 }): ImageResponse {
   const isSocial = variant === 'social';
   const size = isSocial ? SOCIAL_SIZE : PAGE_BANNER_SIZE;
-  const h = hashString(slug);
+  const h = hashString(seed);
   const rotation = (h % 25) - 12;
   const ringCount = 2 + (h % 2);
   const offsetY = ((h >> 3) % 160) - 80;
@@ -182,6 +200,12 @@ export function renderArticleBanner({
         </div>
       ) : null}
 
+      {isSocial && subtitle ? (
+        <div style={{ display: 'flex', fontSize: 26, color: INK_MUTED, maxWidth: 820 }}>
+          {clampSubtitle(subtitle)}
+        </div>
+      ) : null}
+
       <div style={{ display: 'flex', alignItems: 'center', fontSize: 20, color: INK_MUTED }}>
         <div style={{ display: 'flex', width: 64, height: 1, backgroundColor: BORDER }} />
         <div style={{ marginLeft: 20 }}>ssegning.com</div>
@@ -189,10 +213,8 @@ export function renderArticleBanner({
             counts each text node as a child, so the two-node form needs an
             explicit `display` or it throws "Expected <div> to have explicit
             display: flex ... if it has more than one child node". */}
-        {readingMinutes ? <div style={{ marginLeft: 20 }}>·</div> : null}
-        {readingMinutes ? (
-          <div style={{ marginLeft: 20 }}>{`${readingMinutes} min read`}</div>
-        ) : null}
+        {footerNote ? <div style={{ marginLeft: 20 }}>·</div> : null}
+        {footerNote ? <div style={{ marginLeft: 20 }}>{footerNote}</div> : null}
       </div>
     </div>,
     { ...size },
