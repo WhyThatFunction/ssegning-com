@@ -1,21 +1,7 @@
 import { ImageResponse } from 'next/og';
 
-/**
- * The two shapes this renders, and why there are two.
- *
- * `social` is the Open Graph card. It carries the title because that image is
- * the whole of what a reader sees in a feed — there is no page around it.
- *
- * `page` is the banner on the article itself, where the title is already the
- * <h1> directly below. Repeating it there is redundant, and obviously so on a
- * phone, so this variant drops it and becomes a band: shorter, texture and
- * two small anchors, closer to what a publication actually puts above an
- * article.
- */
+/** The social-card ratio. The only shape this renders. */
 export const SOCIAL_SIZE = { width: 1200, height: 630 };
-export const PAGE_BANNER_SIZE = { width: 1200, height: 420 };
-
-export type BannerVariant = 'social' | 'page';
 
 // Same path as src/components/brand-mark.tsx, src/app/icon.svg and
 // src/app/opengraph-image.tsx. Kept as a literal for the same reason they do:
@@ -96,7 +82,6 @@ export function renderBanner({
   kicker,
   subtitle,
   footerNote,
-  variant,
 }: {
   title: string;
   /** Anything stable — a slug, a route key. Only ever used to pick the geometry. */
@@ -106,10 +91,7 @@ export function renderBanner({
   subtitle?: string | null;
   /** Trailing footer item, e.g. "10 min read". */
   footerNote?: string | null;
-  variant: BannerVariant;
 }): ImageResponse {
-  const isSocial = variant === 'social';
-  const size = isSocial ? SOCIAL_SIZE : PAGE_BANNER_SIZE;
   const h = hashString(seed);
   const rotation = (h % 25) - 12;
   const ringCount = 2 + (h % 2);
@@ -133,7 +115,7 @@ export function renderBanner({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        padding: isSocial ? '72px 80px' : '52px 64px',
+        padding: '72px 80px',
         backgroundColor: CANVAS,
         color: INK,
         fontFamily: 'sans-serif',
@@ -142,13 +124,13 @@ export function renderBanner({
     >
       {/* biome-ignore lint/a11y/noSvgWithoutTitle: rasterized to PNG by Satori — there is no accessibility tree inside the image, and the <img> that renders it carries the alt text. */}
       <svg
-        width={isSocial ? 820 : 680}
-        height={isSocial ? 820 : 680}
+        width="820"
+        height="820"
         viewBox="0 0 64 64"
         style={{
           position: 'absolute',
-          right: isSocial ? -210 : -170,
-          top: (isSocial ? -95 : -130) + offsetY,
+          right: -210,
+          top: -95 + offsetY,
           opacity: 0.1,
         }}
       >
@@ -185,22 +167,20 @@ export function renderBanner({
         </div>
       </div>
 
-      {isSocial ? (
-        <div
-          style={{
-            display: 'flex',
-            fontSize: titleFontSize(title),
-            fontWeight: 600,
-            lineHeight: 1.12,
-            letterSpacing: -1,
-            maxWidth: 880,
-          }}
-        >
-          {title}
-        </div>
-      ) : null}
+      <div
+        style={{
+          display: 'flex',
+          fontSize: titleFontSize(title),
+          fontWeight: 600,
+          lineHeight: 1.12,
+          letterSpacing: -1,
+          maxWidth: 880,
+        }}
+      >
+        {title}
+      </div>
 
-      {isSocial && subtitle ? (
+      {subtitle ? (
         <div style={{ display: 'flex', fontSize: 26, color: INK_MUTED, maxWidth: 820 }}>
           {clampSubtitle(subtitle)}
         </div>
@@ -217,6 +197,6 @@ export function renderBanner({
         {footerNote ? <div style={{ marginLeft: 20 }}>{footerNote}</div> : null}
       </div>
     </div>,
-    { ...size },
+    { ...SOCIAL_SIZE },
   );
 }

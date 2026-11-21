@@ -105,26 +105,21 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           {post.title}
         </h1>
 
-        {/* An uploaded cover wins; otherwise the generated banner (see
-            lib/article-banner.tsx), so every article has one from the moment
-            it exists. `unoptimized` because the source is already a
-            server-rendered PNG at exactly this size — putting it through the
-            image optimizer would re-encode it for nothing. */}
-        <div
-          className={`relative mt-8 overflow-hidden rounded-card border border-border ${
-            coverUrl ? 'aspect-[16/9]' : 'aspect-[1200/420]'
-          }`}
-        >
-          <Image
-            src={coverUrl ?? `/journal/${slug}/banner`}
-            alt={coverUrl ? mediaAlt(post.cover, post.title) : ''}
-            fill
-            sizes="100vw"
-            priority
-            unoptimized={!coverUrl}
-            className="object-cover"
-          />
-        </div>
+        {/* The cover is the article's banner, and an article without one
+            simply has no banner. Nothing is generated to stand in: covers are
+            produced outside this app and uploaded in the CMS. */}
+        {coverUrl ? (
+          <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-card border border-border">
+            <Image
+              src={coverUrl}
+              alt={mediaAlt(post.cover, post.title)}
+              fill
+              sizes="100vw"
+              priority
+              className="object-cover"
+            />
+          </div>
+        ) : null}
 
         {post.body ? (
           <div className="mt-10">

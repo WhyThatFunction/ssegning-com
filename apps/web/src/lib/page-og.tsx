@@ -32,6 +32,5 @@ export async function renderPageOg({
     seed,
     kicker: siteSetting.siteName,
     subtitle: subtitle ?? siteSetting.tagline,
-    variant: 'social',
   });
 }
