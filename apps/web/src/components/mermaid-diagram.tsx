@@ -125,31 +125,113 @@ function parseRgbColor(color: string): [number, number, number] | null {
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
+/** Converts sRGB channels (0-255) to HSL, all three components in 0-1. */
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const lightness = (max + min) / 2;
+  const delta = max - min;
+  if (delta === 0) return [0, 0, lightness];
+
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+  let hue: number;
+  if (max === rn) hue = (gn - bn) / delta + (gn < bn ? 6 : 0);
+  else if (max === gn) hue = (bn - rn) / delta + 2;
+  else hue = (rn - gn) / delta + 4;
+
+  return [hue / 6, saturation, lightness];
+}
+
+/** Inverse of `rgbToHsl`. Returns sRGB channels in 0-255 (not rounded). */
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  if (s === 0) return [l * 255, l * 255, l * 255];
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const channel = (t: number): number => {
+    const tn = (t + 1) % 1;
+    if (tn < 1 / 6) return p + (q - p) * 6 * tn;
+    if (tn < 1 / 2) return q;
+    if (tn < 2 / 3) return p + (q - p) * (2 / 3 - tn) * 6;
+    return p;
+  };
+
+  return [channel(h + 1 / 3) * 255, channel(h) * 255, channel(h - 1 / 3) * 255];
+}
+
+/** Above this relative luminance, a fill was authored for a light canvas. */
+const LIGHT_FILL_LUMINANCE = 0.5;
 /**
- * The house style's diagrams hand-pick per-node highlight fills right in the
- * Markdown (`style X fill:#d1fae5,stroke:#10b981` for a "good" outcome,
- * a pastel red for a "bad" one — present in every one of these 12 articles,
- * ~4-11 times each). Those fills are authored once, meant to read against a
- * light canvas, and mermaid's theme otherwise applies a single global label
- * color to every node — so in dark mode a light-on-dark label color lands on
- * top of those same light pastel fills and becomes nearly illegible.
- *
- * Since the fill is real (already resolved by the browser, custom or not),
- * each node's own contrast can be fixed after the fact: read its shape's
- * actual rendered color and pick a readable label color from its luminance,
- * instead of trusting one theme-wide text color to suit every fill an
- * article happens to use.
+ * Where a re-toned highlight fill lands in dark mode. 0.19 keeps the hue
+ * legible against `--color-canvas` without the node glowing; the saturation
+ * floor stops an already-washed-out pastel collapsing into flat grey.
  */
-function fixNodeLabelContrast(container: HTMLElement) {
-  for (const node of Array.from(container.querySelectorAll('.node'))) {
-    const shape = node.querySelector('rect, polygon, circle, ellipse, path');
-    const label = node.querySelector<HTMLElement>('.nodeLabel');
-    if (!shape || !label) continue;
+const DARK_FILL_LIGHTNESS = 0.19;
+const DARK_FILL_MIN_SATURATION = 0.45;
+
+/**
+ * Makes the house style's hand-picked highlight fills work in both themes.
+ *
+ * These articles mark outcomes right in the Markdown — `style X
+ * fill:#d1fae5,stroke:#10b981` for a "good" outcome, a pastel red for a bad
+ * one, amber for "careful" — roughly 4-11 times each, in every article. Those
+ * three pastels are picked for a white page, and they are the one part of a
+ * diagram mermaid's theme cannot reach: an explicit `style` directive in the
+ * source beats anything in `themeVariables`.
+ *
+ * In dark mode that leaves a bright pastel block glowing on a near-black
+ * canvas. Rather than recolour them by hand in every article (and constrain
+ * every future one), each such fill is re-toned here: hue is kept, saturation
+ * is kept or raised to a floor, and lightness drops to `DARK_FILL_LIGHTNESS`
+ * — so green still reads as green and red as red, while the node sits in the
+ * page instead of on top of it. The author's `stroke` is deliberately left
+ * alone: those are saturated mid-tones that already read against either
+ * background, and they are what keeps the node identifiable.
+ *
+ * The label colour is then derived from the fill the node actually ended up
+ * with. It has to be written to the label's descendants as well as the
+ * `.nodeLabel` span itself: mermaid renders the text inside a `<p>` that
+ * carries its own colour, which beats an inline colour set on the parent.
+ * That is exactly how an earlier version of this function came to compute a
+ * correct label colour that never appeared on screen.
+ */
+function harmonizeDiagramColors(container: HTMLElement, dark: boolean) {
+  for (const node of Array.from(container.querySelectorAll('.node, .cluster'))) {
+    const shape = node.querySelector<SVGElement>('rect, polygon, circle, ellipse, path');
+    const label = node.querySelector<HTMLElement>('.nodeLabel, .cluster-label');
+    if (!shape) continue;
 
     const rgb = parseRgbColor(getComputedStyle(shape).fill);
     if (!rgb) continue;
 
-    label.style.color = relativeLuminance(...rgb) > 0.5 ? '#0a0a0a' : '#f7f7f6';
+    let luminance = relativeLuminance(...rgb);
+
+    if (dark && luminance > LIGHT_FILL_LUMINANCE) {
+      const [hue, saturation] = rgbToHsl(...rgb);
+      const toned = hslToRgb(
+        hue,
+        Math.max(saturation, DARK_FILL_MIN_SATURATION),
+        DARK_FILL_LIGHTNESS,
+      );
+      const [r, g, b] = toned;
+      shape.style.setProperty(
+        'fill',
+        `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`,
+        'important',
+      );
+      luminance = relativeLuminance(r, g, b);
+    }
+
+    if (!label) continue;
+
+    const ink = luminance > LIGHT_FILL_LUMINANCE ? '#0a0a0a' : '#f7f7f6';
+    label.style.setProperty('color', ink, 'important');
+    for (const child of Array.from(label.querySelectorAll<HTMLElement>('*'))) {
+      child.style.setProperty('color', ink, 'important');
+    }
   }
 }
 
@@ -203,11 +285,13 @@ export function MermaidDiagram({ chart }: { chart: string }) {
       try {
         const { default: mermaid } = await import('mermaid');
 
+        const dark = isDarkTheme();
+
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'strict',
           theme: 'base',
-          darkMode: isDarkTheme(),
+          darkMode: dark,
           fontFamily: FONT_SANS,
           themeVariables: buildThemeVariables(),
         });
@@ -216,7 +300,7 @@ export function MermaidDiagram({ chart }: { chart: string }) {
 
         if (!cancelled && containerRef.current) {
           containerRef.current.innerHTML = svg;
-          fixNodeLabelContrast(containerRef.current);
+          harmonizeDiagramColors(containerRef.current, dark);
           setState('ok');
         }
       } catch (error) {
