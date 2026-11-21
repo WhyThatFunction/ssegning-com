@@ -21,7 +21,7 @@ export default function GlobalError({
     <Section divider={false} className="pt-24 md:pt-32">
       <Container>
         <p className="font-mono text-caption uppercase tracking-[0.08em] text-accent">Error</p>
-        <h1 className="mt-3 text-heading-lg font-medium tracking-tight text-ink">
+        <h1 className="mt-3 text-heading-lg font-light tracking-tight text-ink">
           Something went wrong.
         </h1>
         <p className="mt-3 max-w-md text-ink-muted">

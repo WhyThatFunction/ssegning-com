@@ -43,7 +43,7 @@ export default async function HomePage() {
               {page.heroEyebrow}
             </p>
           ) : null}
-          <h1 className="mt-3 text-display font-medium tracking-tight text-balance text-ink">
+          <h1 className="mt-3 text-display font-light tracking-tight text-balance text-ink">
             {page.heroHeadline}
           </h1>
           {page.heroSubline ? (
@@ -60,7 +60,7 @@ export default async function HomePage() {
               <LinkButton
                 href={page.secondaryCta.href}
                 external={Boolean(page.secondaryCta.external)}
-                variant="ghost"
+                variant="tonal"
               >
                 {page.secondaryCta.label}
               </LinkButton>
@@ -79,7 +79,7 @@ export default async function HomePage() {
         <Section>
           <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
             {page.introTitle ? (
-              <h2 className="text-heading-lg font-medium tracking-tight text-ink">
+              <h2 className="text-heading-lg font-light tracking-tight text-ink">
                 {page.introTitle}
               </h2>
             ) : null}
@@ -94,7 +94,7 @@ export default async function HomePage() {
           title="Services"
           description="A short list, on purpose — depth on a few things, not breadth across everything."
           action={
-            <LinkButton href="/services" variant="ghost">
+            <LinkButton href="/services" variant="text">
               All services
             </LinkButton>
           }
@@ -118,7 +118,7 @@ export default async function HomePage() {
           title="Recent engagements"
           description="A handful of the problems I've been trusted to fix."
           action={
-            <LinkButton href="/work" variant="ghost">
+            <LinkButton href="/work" variant="text">
               All work
             </LinkButton>
           }
@@ -141,7 +141,7 @@ export default async function HomePage() {
           eyebrow="Journal"
           title="Recent writing"
           action={
-            <LinkButton href="/journal" variant="ghost">
+            <LinkButton href="/journal" variant="text">
               All posts
             </LinkButton>
           }
@@ -160,8 +160,8 @@ export default async function HomePage() {
       </Section>
 
       <Section wide={false}>
-        <div className="rounded-card border border-border p-8 text-center sm:p-12">
-          <h2 className="text-heading-lg font-medium tracking-tight text-ink">
+        <div className="rounded-hero bg-surface-2 p-8 text-center sm:p-14">
+          <h2 className="text-heading-lg font-light tracking-tight text-ink">
             Have a platform problem worth solving properly?
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-ink-muted">

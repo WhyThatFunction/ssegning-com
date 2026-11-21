@@ -41,9 +41,7 @@ export default async function AboutPage() {
                 />
               </div>
             ) : null}
-            <h1 className="mt-6 text-heading-lg font-medium tracking-tight text-ink">
-              {page.name}
-            </h1>
+            <h1 className="mt-6 text-heading-lg font-light tracking-tight text-ink">{page.name}</h1>
             {page.role ? <p className="mt-1 text-ink-muted">{page.role}</p> : null}
           </div>
 

@@ -3,11 +3,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { ArticleToc } from '@/components/article-toc';
 import { Comments } from '@/components/comments';
 import { Container } from '@/components/container';
+import { RelatedPosts } from '@/components/related-posts';
 import { RichHtml } from '@/components/rich-html';
 import { Section } from '@/components/section';
 import { posts as fallbackPosts } from '@/content/fallback';
+import { prepareArticle } from '@/lib/article';
 import { mediaAlt, resolveMediaUrl } from '@/lib/media';
 import { getPostBySlug, getPosts } from '@/lib/strapi';
 import type { Post } from '@/lib/types';
@@ -83,6 +86,8 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
   const coverUrl = resolveMediaUrl(post.cover);
   const date = formatDate(post.publishedAt);
+  const article = post.body ? prepareArticle(post.body) : null;
+  const morePosts = (await getPosts()).filter((item) => item.slug !== post.slug).slice(0, 3);
 
   return (
     <Section divider={false} className="pt-16 md:pt-24">
@@ -101,7 +106,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           ) : null}
         </div>
 
-        <h1 className="mt-3 text-display font-medium tracking-tight text-balance text-ink">
+        <h1 className="mt-3 text-display font-light tracking-tight text-balance text-ink">
           {post.title}
         </h1>
 
@@ -121,11 +126,23 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           </div>
         ) : null}
 
-        {post.body ? (
-          <div className="mt-10">
-            <RichHtml>{post.body}</RichHtml>
+        {article ? (
+          <div className="relative mt-10">
+            <RichHtml html={article.html} />
+
+            {/* The rail sits OUTSIDE the content box (left-full), in the page
+                margin, rather than in a column beside the text. Figures, tables
+                and code break 100px out of the 40rem reading column on both
+                sides; a rail inside the content box would collide with them.
+                Out here it starts past the furthest bleed. xl only, because
+                below 1280px the margin is too narrow to hold it. */}
+            <aside className="absolute top-0 left-full hidden h-full w-52 pl-6 xl:block">
+              <ArticleToc headings={article.headings} />
+            </aside>
           </div>
         ) : null}
+
+        <RelatedPosts posts={morePosts} />
 
         <Comments
           repo={process.env.GISCUS_REPO}

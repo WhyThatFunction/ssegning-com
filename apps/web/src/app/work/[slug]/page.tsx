@@ -78,7 +78,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           ← All work
         </Link>
 
-        <h1 className="mt-4 text-display font-medium tracking-tight text-balance text-ink">
+        <h1 className="mt-4 text-display font-light tracking-tight text-balance text-ink">
           {project.title}
         </h1>
 

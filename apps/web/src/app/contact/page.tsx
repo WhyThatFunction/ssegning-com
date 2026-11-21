@@ -28,7 +28,7 @@ export default async function ContactPage() {
         <div className="grid gap-12 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div>
             {page.headline ? (
-              <h1 className="text-display font-medium tracking-tight text-balance text-ink">
+              <h1 className="text-display font-light tracking-tight text-balance text-ink">
                 {page.headline}
               </h1>
             ) : null}
@@ -41,7 +41,7 @@ export default async function ContactPage() {
             <div className="mt-8 flex flex-wrap gap-4">
               {page.email ? <LinkButton href={`mailto:${page.email}`}>Email me</LinkButton> : null}
               {page.bookingUrl ? (
-                <LinkButton href={page.bookingUrl} external variant="ghost">
+                <LinkButton href={page.bookingUrl} external variant="tonal">
                   Book a call
                 </LinkButton>
               ) : null}

@@ -13,7 +13,7 @@ export default function NotFound() {
     <Section divider={false} className="pt-24 md:pt-32">
       <Container>
         <p className="font-mono text-caption uppercase tracking-[0.08em] text-accent">404</p>
-        <h1 className="mt-3 text-heading-lg font-medium tracking-tight text-ink">
+        <h1 className="mt-3 text-heading-lg font-light tracking-tight text-ink">
           That page doesn't exist.
         </h1>
         <p className="mt-3 max-w-md text-ink-muted">

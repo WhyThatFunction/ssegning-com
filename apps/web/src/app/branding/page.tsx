@@ -57,13 +57,13 @@ const TOKEN_ROWS: Array<{ name: string; light: string; dark: string; role: strin
 const TYPE_SCALE: Array<{ token: string; className: string; sample: string; spec: string }> = [
   {
     token: 'text-display',
-    className: 'text-display font-medium tracking-tight',
+    className: 'text-display font-light tracking-tight',
     sample: 'Platform engineering',
     spec: 'clamp(2.25rem, 1.65rem + 2.6vw, 3.25rem) / 1.1 / -0.02em',
   },
   {
     token: 'text-heading-lg',
-    className: 'text-heading-lg font-medium tracking-tight',
+    className: 'text-heading-lg font-light tracking-tight',
     sample: 'What I can take off your plate',
     spec: 'clamp(1.5rem, 1.2rem + 1.3vw, 2.25rem) / 1.15 / -0.015em',
   },

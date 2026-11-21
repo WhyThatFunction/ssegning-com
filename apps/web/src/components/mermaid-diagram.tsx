@@ -246,7 +246,11 @@ function harmonizeDiagramColors(container: HTMLElement, dark: boolean) {
  * finished loading yet, fails to load, or fails to parse the diagram — a
  * broken diagram must never blank the page.
  */
-export function MermaidDiagram({ chart }: { chart: string }) {
+/**
+ * `figure` is the diagram's position among the article's diagrams, counted by
+ * `RichHtml`. Omit it to render without a caption bar.
+ */
+export function MermaidDiagram({ chart, figure }: { chart: string; figure?: number }) {
   const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const diagramId = `mermaid-${reactId}`;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -319,7 +323,7 @@ export function MermaidDiagram({ chart }: { chart: string }) {
   }, [chart, diagramId, themeTick]);
 
   return (
-    <div className="mermaid-diagram">
+    <figure className="mermaid-diagram mermaid-figure">
       {state !== 'ok' ? (
         <pre>
           <code>{chart}</code>
@@ -331,6 +335,11 @@ export function MermaidDiagram({ chart }: { chart: string }) {
         aria-hidden={state !== 'ok'}
         style={state === 'ok' ? undefined : { display: 'none' }}
       />
-    </div>
+      {figure ? (
+        <figcaption className="mermaid-figure-caption">
+          <b>{`Fig. ${String(figure).padStart(2, '0')}`}</b>
+        </figcaption>
+      ) : null}
+    </figure>
   );
 }
