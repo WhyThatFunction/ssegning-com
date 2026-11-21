@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { renderBanner, SOCIAL_SIZE } from '@/lib/article-banner';
-import { getPostBySlug } from '@/lib/strapi';
+import { CmsUnavailableError, getPostBySlug } from '@/lib/strapi';
 
 export const size = SOCIAL_SIZE;
 export const contentType = 'image/png';
@@ -20,7 +20,10 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { slug } = await params;
   const lookup = await getPostBySlug(slug);
 
-  if (lookup.status !== 'found') notFound();
+  // An unreachable CMS is not a missing article: throwing keeps the last good
+  // card instead of caching a 404 for it (see CmsUnavailableError).
+  if (lookup.status === 'unavailable') throw new CmsUnavailableError(`the card for "${slug}"`);
+  if (lookup.status === 'missing') notFound();
 
   const post = lookup.value;
 

@@ -12,19 +12,24 @@ import { Section } from '@/components/section';
 import { posts as fallbackPosts } from '@/content/fallback';
 import { prepareArticle } from '@/lib/article';
 import { mediaAlt, resolveMediaUrl } from '@/lib/media';
-import { getPostBySlug, getPosts } from '@/lib/strapi';
+import { CmsUnavailableError, getPostBySlug, getPosts } from '@/lib/strapi';
 import type { Post } from '@/lib/types';
 
 /**
  * Resolves the article for a slug, or `null` to 404.
  *
- * The distinction that matters is between the CMS saying "no such article" and
- * the CMS not answering. Only the second is a reason to show hand-written
- * copy: the URL may be perfectly good and the site is merely degraded. The
- * first means the URL is wrong, and answering it with a article the CMS has
- * never heard of is how /journal/why-i-run-talos-linux and
- * /journal/picking-rust-or-typescript-honestly came to return 200 — two
- * articles live and indexable that exist nowhere in the CMS.
+ * Three answers, three outcomes. The CMS has it: render it. The CMS answered
+ * and has no such article: the URL is wrong, so 404. The CMS did not answer:
+ * the URL may be perfectly good, so this is never a 404 -- it throws
+ * `CmsUnavailableError`, and Next keeps serving the last good copy of the page
+ * (see the class in lib/strapi.ts). The one exception is a slug from the
+ * hand-written fallback list, which the index pages link to while the CMS is
+ * down and which has no CMS copy to protect.
+ *
+ * Answering an article the CMS has never heard of is how
+ * /journal/why-i-run-talos-linux and /journal/picking-rust-or-typescript-honestly
+ * came to return 200 -- two articles live and indexable that exist nowhere in
+ * the CMS -- so `missing` never falls back.
  */
 async function resolvePost(slug: string): Promise<Post | null> {
   const lookup = await getPostBySlug(slug);
@@ -32,7 +37,9 @@ async function resolvePost(slug: string): Promise<Post | null> {
   if (lookup.status === 'found') return lookup.value;
   if (lookup.status === 'missing') return null;
 
-  return fallbackPosts.find((item) => item.slug === slug) ?? null;
+  const fallback = fallbackPosts.find((item) => item.slug === slug);
+  if (fallback) return fallback;
+  throw new CmsUnavailableError(`article "${slug}"`);
 }
 
 function formatDate(iso: string | null): string | null {
