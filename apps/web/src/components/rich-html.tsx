@@ -1,3 +1,4 @@
+import { looksLikeTiptapJson, tiptapJsonToHtml } from '@ssegning/tiptap-schema';
 import parse, { type Element, type HTMLReactParserOptions } from 'html-react-parser';
 import sanitizeHtml from 'sanitize-html';
 
@@ -10,9 +11,12 @@ import { MermaidDiagram } from './mermaid-diagram';
 type SanitizeOptions = NonNullable<Parameters<typeof sanitizeHtml>[1]>;
 
 /**
- * Renders `post.body`, which is now Tiptap-authored HTML (see
- * `apps/cms/src/lib/markdown-to-html.ts` and the `plugin::tiptap-editor`
- * field on `api::post.post`) rather than Strapi's Markdown `richtext`.
+ * Renders `post.body`, which is a **serialized Tiptap document** — the format
+ * the `plugin::tiptap-editor` custom field on `api::post.post` stores
+ * (`JSON.stringify(editor.getJSON())`). It is turned back into HTML here with
+ * `@ssegning/tiptap-schema`, the package that owns the one extension list
+ * this project uses, so the website and the CMS cannot drift apart on which
+ * nodes exist.
  *
  * `<Markdown>` (`markdown.tsx`) needs no sanitizer: `react-markdown` parses
  * Markdown into an AST and builds a React element tree from it, so there is
@@ -171,7 +175,16 @@ const PARSE_OPTIONS: HTMLReactParserOptions = {
 };
 
 export function RichHtml({ children }: { children: string }) {
-  const sanitized = sanitizeHtml(children, SANITIZE_OPTIONS);
+  // A body that is not a serialized Tiptap document is HTML left over from
+  // before the CMS's boot migration converted it. The two images deploy as
+  // separate Deployments, so there is a window — typically seconds, but
+  // unbounded if the CMS pod is slow to come up — where this app is already
+  // new and the rows are still old. Rendering that HTML directly keeps the
+  // article readable through the window instead of blanking the page. It is
+  // not a supported input format: nothing writes HTML to this field any
+  // more, so once the migration has run this branch is unreachable.
+  const html = looksLikeTiptapJson(children) ? tiptapJsonToHtml(children) : children;
+  const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
 
   return <div className="prose">{parse(sanitized, PARSE_OPTIONS)}</div>;
 }

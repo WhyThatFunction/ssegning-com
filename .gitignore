@@ -8,6 +8,9 @@ node_modules/
 out/
 next-env.d.ts
 
+# shared workspace packages (compiled output, built in CI and in both Dockerfiles)
+packages/*/dist/
+
 # strapi
 .strapi/
 apps/cms/dist/

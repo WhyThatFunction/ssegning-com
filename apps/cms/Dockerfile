@@ -28,6 +28,11 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/cms/package.json apps/cms/package.json
+# NOTE: this manifest list is duplicated in apps/web/Dockerfile. pnpm needs
+# every workspace member's package.json to resolve --frozen-lockfile, so a
+# new workspace package has to be added to BOTH files or the other image
+# fails its install. Grep for `pnpm-workspace.yaml` before adding one.
+COPY packages/tiptap-schema/package.json packages/tiptap-schema/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-slim AS builder
@@ -46,6 +51,7 @@ COPY . .
 # strapi/documentation docs/dev-docs/deployment.md, "Strapi Production
 # Build".)
 ENV NODE_ENV=production
+RUN pnpm --filter @ssegning/tiptap-schema build
 RUN pnpm --filter @ssegning/cms build
 
 # `pnpm deploy --filter=<pkg> --prod <dir>` is pnpm's own documented

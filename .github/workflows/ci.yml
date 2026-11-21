@@ -41,6 +41,19 @@ jobs:
       - name: Biome (lint + format check)
         run: pnpm exec biome ci .
 
+      # Must run before the smoke build: apps/web imports @ssegning/tiptap-schema,
+      # whose package.json points at dist/, and nothing builds a workspace
+      # dependency implicitly — `pnpm --filter <app> build` runs only that app's
+      # script, and `--filter ...<app>` does not build dependencies either
+      # (checked, not assumed). Omitting this fails with
+      # "Module not found: Can't resolve '@ssegning/tiptap-schema'".
+      #
+      # THIS ORDERING IS DUPLICATED in apps/web/Dockerfile, apps/cms/Dockerfile
+      # and the root package.json `build` script. A new workspace package needs
+      # adding to all four, or whichever one was missed breaks.
+      - name: Build workspace packages
+        run: pnpm --filter './packages/*' build
+
       - name: Smoke build apps/web
         run: pnpm --filter @ssegning/web build
 
