@@ -1,0 +1,28 @@
+diff --git a/dist/admin/RichTextInput-BuTgY6jA.mjs b/dist/admin/RichTextInput-BuTgY6jA.mjs
+index b5cfffadda9001d51833bce31c825198de7fa4dd..11fa17b863abccd786579dd7168cd482615bfca9 100644
+--- a/dist/admin/RichTextInput-BuTgY6jA.mjs
++++ b/dist/admin/RichTextInput-BuTgY6jA.mjs
+@@ -29665,6 +29665,9 @@ function buildExtensions(config) {
+   const starterKitConfig = {
+     heading: false,
+     // ALWAYS false — heading handled separately via BaseHeadingWithSEOTag
++    underline: false,
++    // StarterKit 3 bundles Underline and Gapcursor; buildExtensions adds both again below.
++    gapcursor: false,
+     bold: starterKitFeatureValue(config.bold),
+     italic: starterKitFeatureValue(config.italic),
+     strike: starterKitFeatureValue(config.strike),
+diff --git a/dist/admin/RichTextInput-D9UyIRfa.js b/dist/admin/RichTextInput-D9UyIRfa.js
+index dcb01b34d77bcda6ce2d635914b8a6c396b244d8..94865bf1225dfbc33ccb50f6b7679146f465820d 100644
+--- a/dist/admin/RichTextInput-D9UyIRfa.js
++++ b/dist/admin/RichTextInput-D9UyIRfa.js
+@@ -29671,6 +29671,9 @@ function buildExtensions(config) {
+   const starterKitConfig = {
+     heading: false,
+     // ALWAYS false — heading handled separately via BaseHeadingWithSEOTag
++    underline: false,
++    // StarterKit 3 bundles Underline and Gapcursor; buildExtensions adds both again below.
++    gapcursor: false,
+     bold: starterKitFeatureValue(config.bold),
+     italic: starterKitFeatureValue(config.italic),
+     strike: starterKitFeatureValue(config.strike),

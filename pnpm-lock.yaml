@@ -8,6 +8,9 @@ overrides:
   '@types/react': 19.2.18
   '@types/react-dom': 19.2.5
 
+patchedDependencies:
+  '@notum-cz/strapi-plugin-tiptap-editor@1.2.4': 5c69523450f0ea4d5b88936ae56e2d51d82b05515d2da563756741bcc38e5218
+
 importers:
 
   .:
@@ -20,7 +23,7 @@ importers:
     dependencies:
       '@notum-cz/strapi-plugin-tiptap-editor':
         specifier: ^1.2.4
-        version: 1.2.4(2448069ac22e5ce9253597943aa827b5)
+        version: 1.2.4(patch_hash=5c69523450f0ea4d5b88936ae56e2d51d82b05515d2da563756741bcc38e5218)(2448069ac22e5ce9253597943aa827b5)
       '@ssegning/tiptap-schema':
         specifier: workspace:*
         version: link:../../packages/tiptap-schema
@@ -10211,7 +10214,7 @@ snapshots:
 
   '@noble/hashes@1.8.0': {}
 
-  '@notum-cz/strapi-plugin-tiptap-editor@1.2.4(2448069ac22e5ce9253597943aa827b5)':
+  '@notum-cz/strapi-plugin-tiptap-editor@1.2.4(patch_hash=5c69523450f0ea4d5b88936ae56e2d51d82b05515d2da563756741bcc38e5218)(2448069ac22e5ce9253597943aa827b5)':
     dependencies:
       '@strapi/design-system': 2.2.0(@babel/runtime@7.29.7)(@codemirror/autocomplete@6.20.3)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/search@6.7.1)(@codemirror/state@6.7.1)(@codemirror/theme-one-dark@6.1.3)(@codemirror/view@6.43.9)(@strapi/icons@2.2.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-components@6.5.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(codemirror@6.0.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-components@6.5.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@strapi/icons': 2.2.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-components@6.5.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))

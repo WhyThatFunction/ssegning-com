@@ -33,6 +33,8 @@ COPY apps/cms/package.json apps/cms/package.json
 # new workspace package has to be added to BOTH files or the other image
 # fails its install. Grep for `pnpm-workspace.yaml` before adding one.
 COPY packages/tiptap-schema/package.json packages/tiptap-schema/package.json
+# pnpm-workspace.yaml patches a dependency; --frozen-lockfile fails without the file.
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-slim AS builder

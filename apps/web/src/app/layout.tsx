@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { DM_Sans, JetBrains_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 
+import { ServiceWorker } from '@/components/service-worker';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { siteSetting as fallbackSiteSetting } from '@/content/fallback';
@@ -86,6 +87,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <SiteHeader siteSetting={siteSetting} />
         <main id="main-content">{children}</main>
         <SiteFooter siteSetting={siteSetting} />
+        <ServiceWorker />
       </body>
     </html>
   );

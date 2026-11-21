@@ -25,3 +25,4 @@ apps/cms/types/generated/
 .env.*
 !.env.example
 apps/cms/.strapi-updater.json
+*.tsbuildinfo
