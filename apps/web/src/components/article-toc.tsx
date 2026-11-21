@@ -48,6 +48,7 @@ export function ArticleToc({ headings }: { headings: ArticleHeading[] }) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (headings.length < 2) return;
     const ids = headings.map((heading) => heading.id);
     let frame = 0;
     const update = () => {

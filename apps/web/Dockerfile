@@ -63,6 +63,9 @@ COPY . .
 # a new failure mode.
 ARG STRAPI_URL
 ENV STRAPI_URL=$STRAPI_URL
+# Commit SHA, read by next.config.ts to version the service worker per deploy.
+ARG GIT_SHA
+ENV GIT_SHA=$GIT_SHA
 ENV NODE_ENV=production
 RUN pnpm --filter @ssegning/tiptap-schema build
 RUN pnpm --filter @ssegning/web build

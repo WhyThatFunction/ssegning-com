@@ -4,37 +4,86 @@
 //
 // What it caches, and how:
 //   - /_next/static/*  cache-first. File names carry a content hash, so a
-//                      cached copy can never be stale.
+//                      cached copy can never be stale. Kept across deploys,
+//                      so a page saved last week still finds its scripts
+//                      offline; capped, oldest out first.
 //   - /_next/image     cache-first, capped. Resized images for a given URL
 //                      and width do not change.
-//   - page navigations network-first. Online readers always get the live
-//                      page; the copy is kept only for when the network is
-//                      gone or slower than NAVIGATION_TIMEOUT_MS. With no
-//                      copy at all the offline page is shown.
+//   - page navigations network-first, HTML only, stored by path (query
+//                      strings such as utm_* are ignored). Online readers
+//                      get the live page as soon as its headers arrive; the
+//                      saved copy is used when the network fails or takes
+//                      longer than NAVIGATION_TIMEOUT_MS. With no copy, the
+//                      offline page is shown.
 // Everything else (other origins, /api, non-GET, React Server Component
 // requests made during client-side navigation) is left to the network
 // untouched. If an RSC request fails offline, Next falls back to a full page
 // load, which this worker then answers from the page cache.
 //
-// Only complete 200 responses from this origin are stored: never an error
-// page, a 404, or a redirect.
+// Only complete 200 responses from this origin are stored, never an error
+// page, a 404 or a redirect. Storing happens beside the response, never in
+// its way: a full disk or any other cache error costs the saved copy, not
+// the page.
 //
-// Bump VERSION when the caching rules change; activation deletes every cache
-// from older versions. To retire the worker, ship one that calls
-// self.registration.unregister() in its activate handler.
+// /sw-build.js (app/sw-build.js/route.ts) sets self.SW_BUILD to the commit
+// the site was built from. The browser compares imported scripts too, so
+// every deploy installs a fresh worker: it saves that deploy's offline page
+// and its assets again, and activation drops the previous offline cache.
+// Bump RULES when the caching rules change; activation then drops every
+// cache from older rules. To retire the worker, ship one that calls
+// self.registration.unregister() in its activate handler; deleting this file
+// leaves the old worker running.
 
-const VERSION = 'v1';
-const STATIC_CACHE = `static-${VERSION}`;
-const IMAGE_CACHE = `images-${VERSION}`;
-// Read by the offline page (src/app/offline/cached-pages.tsx) to list what
-// can still be opened. Keep the two names in step.
-const PAGE_CACHE = `pages-${VERSION}`;
-const CURRENT_CACHES = [STATIC_CACHE, IMAGE_CACHE, PAGE_CACHE];
+importScripts('/sw-build.js');
+
+const RULES = 'v1';
+const STATIC_CACHE = `static-${RULES}`;
+const IMAGE_CACHE = `images-${RULES}`;
+// The offline page lists the entries of every cache named `pages-*`
+// (src/app/offline/cached-pages.tsx).
+const PAGE_CACHE = `pages-${RULES}`;
+const OFFLINE_CACHE = `offline-${RULES}-${self.SW_BUILD}`;
+const CURRENT_CACHES = [STATIC_CACHE, IMAGE_CACHE, PAGE_CACHE, OFFLINE_CACHE];
 
 const OFFLINE_URL = '/offline';
 const NAVIGATION_TIMEOUT_MS = 4000;
 const MAX_PAGES = 60;
 const MAX_IMAGES = 120;
+const MAX_STATIC = 400;
+
+function isCacheable(response) {
+  return response.status === 200 && response.type === 'basic';
+}
+
+function isHtml(response) {
+  return (response.headers.get('content-type') ?? '').startsWith('text/html');
+}
+
+/** Deletes the oldest entries (insertion order) beyond `max`. */
+async function trim(cache, max) {
+  const keys = await cache.keys();
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - max)).map((key) => cache.delete(key)));
+}
+
+/** Saves a copy; never rejects, since a failed save must not fail anything else. */
+async function store(cacheName, key, response, max) {
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(key, response);
+    if (max) await trim(cache, max);
+  } catch {
+    // Quota, storage pressure, private mode: carry on without the copy.
+  }
+}
+
+/** A cache lookup that treats any cache error as a miss. */
+async function lookup(cacheName, key) {
+  try {
+    return await caches.match(key, { cacheName });
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Saves the offline page and the /_next/static files it loads. The page is
@@ -49,10 +98,11 @@ async function precacheOfflinePage() {
   const html = await response.clone().text();
   const assets = [...new Set(html.match(/\/_next\/static\/[^"'\s)\\]+/g) ?? [])];
   const staticCache = await caches.open(STATIC_CACHE);
-  // One missing asset must not cost the whole install; the page still shows.
+  // One missing asset must not cost the whole install; the page still shows,
+  // and the next deploy's worker tries again.
   await Promise.all(assets.map((asset) => staticCache.add(asset).catch(() => undefined)));
 
-  await (await caches.open(PAGE_CACHE)).put(OFFLINE_URL, response);
+  await (await caches.open(OFFLINE_CACHE)).put(OFFLINE_URL, response);
 }
 
 self.addEventListener('install', (event) => {
@@ -68,58 +118,60 @@ self.addEventListener('activate', (event) => {
           names.filter((name) => !CURRENT_CACHES.includes(name)).map((name) => caches.delete(name)),
         ),
       )
+      .then(() => caches.open(STATIC_CACHE))
+      .then((cache) => trim(cache, MAX_STATIC))
+      .catch(() => undefined)
       .then(() => self.clients.claim()),
   );
 });
 
-function isCacheable(response) {
-  return response.status === 200 && response.type === 'basic';
-}
-
-/** Deletes the oldest entries (insertion order) beyond `max`. */
-async function trim(cacheName, max) {
-  const cache = await caches.open(cacheName);
-  const keys = await cache.keys();
-  await Promise.all(keys.slice(0, Math.max(0, keys.length - max)).map((key) => cache.delete(key)));
-}
-
-async function cacheFirst(request, cacheName, max) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
+async function cacheFirst(event, cacheName, max) {
+  const cached = await lookup(cacheName, event.request);
   if (cached) return cached;
 
-  const response = await fetch(request);
+  const response = await fetch(event.request);
   if (isCacheable(response)) {
-    await cache.put(request, response.clone());
-    if (max) await trim(cacheName, max);
+    event.waitUntil(store(cacheName, event.request, response.clone(), max));
   }
   return response;
 }
 
-/** The page URL a navigation is stored under: path and query, no fragment. */
+/** The key a page is stored under: its path, without query or fragment. */
 function pageKey(request) {
   const url = new URL(request.url);
-  return url.origin + url.pathname + url.search;
+  return url.origin + url.pathname;
 }
 
-async function networkFirst(request) {
-  const cache = await caches.open(PAGE_CACHE);
+async function networkFirst(event) {
+  const { request } = event;
   const key = pageKey(request);
 
-  const network = fetch(request).then(async (response) => {
-    if (isCacheable(response)) {
-      await cache.put(key, response.clone());
-      await trim(PAGE_CACHE, MAX_PAGES);
-    }
-    return response;
-  });
+  // Registered now, while the event is certainly still open: the save may
+  // finish after the reader has already been answered from the cache.
+  let saved;
+  event.waitUntil(new Promise((resolve) => (saved = resolve)));
 
-  const cached = await cache.match(key);
+  const network = fetch(request).then(
+    (response) => {
+      if (isCacheable(response) && isHtml(response)) {
+        store(PAGE_CACHE, key, response.clone(), MAX_PAGES).then(saved);
+      } else {
+        saved();
+      }
+      return response;
+    },
+    (error) => {
+      saved();
+      throw error;
+    },
+  );
+
+  const cached = await lookup(PAGE_CACHE, key);
   if (!cached) {
     try {
       return await network;
     } catch {
-      return (await cache.match(OFFLINE_URL)) ?? Response.error();
+      return (await lookup(OFFLINE_CACHE, OFFLINE_URL)) ?? Response.error();
     }
   }
 
@@ -140,16 +192,16 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
 
   if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    event.respondWith(cacheFirst(event, STATIC_CACHE, MAX_STATIC));
     return;
   }
 
   if (url.pathname === '/_next/image') {
-    event.respondWith(cacheFirst(request, IMAGE_CACHE, MAX_IMAGES));
+    event.respondWith(cacheFirst(event, IMAGE_CACHE, MAX_IMAGES));
     return;
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(event));
   }
 });

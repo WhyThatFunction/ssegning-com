@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-// Must match PAGE_CACHE in public/sw.js.
-const PAGE_CACHE = 'pages-v1';
-const TITLE_SUFFIX = / — .*$/;
+// public/sw.js names its page cache `pages-<rules version>`; reading every
+// such cache keeps this list working when that version is bumped.
+const PAGE_CACHE_PREFIX = 'pages-';
+// Titles end in " — <site name>" (layout.tsx). Only the last one is cut, so a
+// title with its own dash keeps it.
+const TITLE_SUFFIX = / — [^—]*$/;
 
 interface CachedPage {
   path: string;
@@ -13,12 +16,19 @@ interface CachedPage {
 
 async function readCachedPages(): Promise<CachedPage[]> {
   if (!('caches' in window)) return [];
-  const cache = await caches.open(PAGE_CACHE);
-  const requests = await cache.keys();
+  const names = (await caches.keys()).filter((name) => name.startsWith(PAGE_CACHE_PREFIX));
+  const entries = (
+    await Promise.all(
+      names.map(async (name) => {
+        const cache = await caches.open(name);
+        return (await cache.keys()).map((request) => ({ cache, request }));
+      }),
+    )
+  ).flat();
   const parser = new DOMParser();
 
   const pages = await Promise.all(
-    requests.map(async (request): Promise<CachedPage | null> => {
+    entries.map(async ({ cache, request }): Promise<CachedPage | null> => {
       const url = new URL(request.url);
       if (url.origin !== window.location.origin || url.pathname === '/offline') return null;
       const response = await cache.match(request);
