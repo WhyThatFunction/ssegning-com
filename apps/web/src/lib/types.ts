@@ -178,8 +178,9 @@ export interface StrapiSingleResponse<T> {
  * `missing` and `unavailable` are different facts and must not be collapsed:
  * "the CMS answered and has no such article" means the URL is wrong and the
  * page should 404, while "the CMS could not be reached" means the URL may be
- * perfectly good and the page should degrade to hand-written copy rather than
- * tell a visitor (or a crawler) that their article does not exist.
+ * perfectly good and the page must not tell a visitor (or a crawler) that
+ * their article does not exist. The slug pages throw `CmsUnavailableError`
+ * for it, so Next keeps serving the last good copy.
  *
  * Returning `null` for both is what previously left two fallback articles
  * answering 200 at URLs that exist nowhere in the CMS.

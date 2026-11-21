@@ -180,7 +180,12 @@ async function networkFirst(event) {
   const timeout = new Promise((resolve) =>
     setTimeout(() => resolve(cached), NAVIGATION_TIMEOUT_MS),
   );
-  return Promise.race([network.catch(() => cached), timeout]);
+  // A server error is no better than no answer: the saved copy wins over a 5xx.
+  const answer = network.then(
+    (response) => (response.status >= 500 ? cached : response),
+    () => cached,
+  );
+  return Promise.race([answer, timeout]);
 }
 
 self.addEventListener('fetch', (event) => {

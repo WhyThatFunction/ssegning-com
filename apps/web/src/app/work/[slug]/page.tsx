@@ -6,21 +6,24 @@ import { notFound } from 'next/navigation';
 import { Container } from '@/components/container';
 import { Markdown } from '@/components/markdown';
 import { Section } from '@/components/section';
-import { projects as fallbackProjects } from '@/content/fallback';
 import { mediaAlt, resolveMediaUrl } from '@/lib/media';
-import { getProjectBySlug, getProjects } from '@/lib/strapi';
+import { CmsUnavailableError, getProjectBySlug, getProjects } from '@/lib/strapi';
 import type { Project } from '@/lib/types';
 
 /**
  * Resolves the project for a slug, or `null` to 404.
  *
- * The distinction that matters is between the CMS saying "no such project" and
- * the CMS not answering. Only the second is a reason to show hand-written
- * copy: the URL may be perfectly good and the site is merely degraded. The
- * first means the URL is wrong, and answering it with a project the CMS has
- * never heard of is how /journal/why-i-run-talos-linux and
- * /journal/picking-rust-or-typescript-honestly came to return 200 — two
- * articles live and indexable that exist nowhere in the CMS.
+ * Three answers, three outcomes. The CMS has it: render it. The CMS answered
+ * and has no such project: the URL is wrong, so 404. The CMS did not answer:
+ * the URL may be perfectly good, so this is never a 404 -- it throws
+ * `CmsUnavailableError`, and Next keeps serving the last good copy of the page
+ * (see the class in lib/strapi.ts). There is no hand-written fallback here:
+ * a fallback answered at a real URL is cached and indexed like the real page.
+ *
+ * Answering a project the CMS has never heard of is how
+ * /journal/why-i-run-talos-linux and /journal/picking-rust-or-typescript-honestly
+ * came to return 200 -- two articles live and indexable that exist nowhere in
+ * the CMS -- so `missing` never falls back.
  */
 async function resolveProject(slug: string): Promise<Project | null> {
   const lookup = await getProjectBySlug(slug);
@@ -28,7 +31,7 @@ async function resolveProject(slug: string): Promise<Project | null> {
   if (lookup.status === 'found') return lookup.value;
   if (lookup.status === 'missing') return null;
 
-  return fallbackProjects.find((item) => item.slug === slug) ?? null;
+  throw new CmsUnavailableError(`project "${slug}"`);
 }
 
 // Explicit ISR: the Strapi fetch helpers (src/lib/strapi.ts) swallow every fetch error into null/[], so Next never sees a completed fetch here to infer revalidation from on its own.
@@ -38,8 +41,7 @@ export const dynamicParams = true;
 
 export async function generateStaticParams() {
   // Real records only. Prerendering the fallback slugs would bake a 200 page
-  // for a project the CMS does not have — and because the build runs in CI with
-  // no Strapi reachable, that is exactly the list this would otherwise return.
+  // for a project the CMS does not have.
   // `dynamicParams` is true (below), so anything not listed here still renders
   // on demand; an unknown slug reaches `resolveProject` and 404s there.
   const projects = await getProjects();
