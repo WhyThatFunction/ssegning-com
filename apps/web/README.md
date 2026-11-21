@@ -77,6 +77,38 @@ add a new page that reads `strapi.ts`, it needs this export too.
 `GET /api/healthz` never touches Strapi — it only reports this app's own
 liveness.
 
+## Content rendering
+
+Two renderers cover all CMS body/prose fields, and they are not
+interchangeable:
+
+- **`src/components/markdown.tsx` (`<Markdown>`)** — for every field that is
+  still Strapi's built-in `richtext` Markdown: `home.introBody`,
+  `about.bio`, `contact.body`, `legal.imprint`/`privacy`/`terms`, and
+  `project.body`/`service.body`. Built on `react-markdown` + `remark-gfm`,
+  which parses Markdown into an AST and builds React elements from it — no
+  raw-HTML passthrough, so no sanitizer is needed for this path.
+- **`src/components/rich-html.tsx` (`<RichHtml>`)** — for `post.body` only.
+  Journal articles moved from Markdown to Tiptap-authored HTML (see the root
+  `README.md`'s "Content model" section for the CMS side of that
+  migration); `<RichHtml>` sanitizes that HTML with `sanitize-html` before
+  parsing it with `html-react-parser`, since an HTML string has no structural
+  guarantee against a `<script>` tag or a `javascript:` link the way a
+  Markdown AST does — and Tiptap's own link mark lets an editor type an
+  arbitrary `href`, so that's a real editing-surface concern, not a
+  hypothetical one.
+
+Both renderers detect a mermaid diagram the same way — a fenced/coded block
+that is exactly `<pre><code class="language-mermaid">…</code></pre>` — and
+swap it for `src/components/mermaid-diagram.tsx`'s `<MermaidDiagram>`
+instead of a plain code block. `<RichHtml>` additionally decodes the code
+block's text through the HTML parser (not a raw-string regex), since
+`marked` emits `-->` as `--&gt;` inside code and mermaid needs the literal
+arrow to parse the diagram.
+
+If you add a new Tiptap-backed (HTML) field, render it with `<RichHtml>`,
+not `<Markdown>` — the latter would render raw HTML tags as literal text.
+
 ## Comments
 
 Journal articles have a comment thread powered by

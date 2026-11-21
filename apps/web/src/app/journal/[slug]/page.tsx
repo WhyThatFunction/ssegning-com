@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 
 import { Comments } from '@/components/comments';
 import { Container } from '@/components/container';
-import { Markdown } from '@/components/markdown';
+import { RichHtml } from '@/components/rich-html';
 import { Section } from '@/components/section';
 import { posts as fallbackPosts } from '@/content/fallback';
 import { mediaAlt, resolveMediaUrl } from '@/lib/media';
@@ -100,7 +100,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
         {post.body ? (
           <div className="mt-10">
-            <Markdown>{post.body}</Markdown>
+            <RichHtml>{post.body}</RichHtml>
           </div>
         ) : null}
 

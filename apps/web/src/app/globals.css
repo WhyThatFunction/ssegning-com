@@ -220,6 +220,45 @@ body {
   border-top: 1px solid var(--color-border);
 }
 
+.prose h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.5em;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+}
+
+/* GFM tables (from post.body — see components/rich-html.tsx). The wrapper
+   scrolls horizontally on its own, the same precedent as
+   .mermaid-diagram-canvas below, so a wide table never forces the page body
+   itself to scroll sideways. */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--color-border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  background-color: var(--color-canvas-subtle);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
 /* Mermaid diagrams (see components/mermaid-diagram.tsx). The canvas scrolls
    horizontally on its own so a wide flowchart/sequence diagram never forces
    the page body itself to scroll sideways. */

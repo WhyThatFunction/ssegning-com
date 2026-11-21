@@ -116,7 +116,10 @@ Collection types (all have `slug` uid on title, draft&publish ON):
     gallery: media (multiple), tags: json, outcome: text, url: string, order: integer,
     seo: component `shared.seo`
 - `post`     (api::post.post)         -- journal
-    title: string (req), slug: uid(title) (req), excerpt: text, body: richtext,
+    title: string (req), slug: uid(title) (req), excerpt: text,
+    body: customField plugin::tiptap-editor.RichText (HTML, "article" preset —
+      NOT richtext/Markdown like the other body fields on this page; see
+      apps/cms/README.md "Rich Text (Tiptap) field"),
     cover: media (single image), readingMinutes: integer,
     seo: component `shared.seo`
 
