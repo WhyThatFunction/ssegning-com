@@ -6,7 +6,6 @@ import { notFound } from 'next/navigation';
 import { Container } from '@/components/container';
 import { Markdown } from '@/components/markdown';
 import { Section } from '@/components/section';
-import { projects as fallbackProjects } from '@/content/fallback';
 import { mediaAlt, resolveMediaUrl } from '@/lib/media';
 import { CmsUnavailableError, getProjectBySlug, getProjects } from '@/lib/strapi';
 import type { Project } from '@/lib/types';
@@ -18,9 +17,8 @@ import type { Project } from '@/lib/types';
  * and has no such project: the URL is wrong, so 404. The CMS did not answer:
  * the URL may be perfectly good, so this is never a 404 -- it throws
  * `CmsUnavailableError`, and Next keeps serving the last good copy of the page
- * (see the class in lib/strapi.ts). The one exception is a slug from the
- * hand-written fallback list, which the index pages link to while the CMS is
- * down and which has no CMS copy to protect.
+ * (see the class in lib/strapi.ts). There is no hand-written fallback here:
+ * a fallback answered at a real URL is cached and indexed like the real page.
  *
  * Answering a project the CMS has never heard of is how
  * /journal/why-i-run-talos-linux and /journal/picking-rust-or-typescript-honestly
@@ -33,8 +31,6 @@ async function resolveProject(slug: string): Promise<Project | null> {
   if (lookup.status === 'found') return lookup.value;
   if (lookup.status === 'missing') return null;
 
-  const fallback = fallbackProjects.find((item) => item.slug === slug);
-  if (fallback) return fallback;
   throw new CmsUnavailableError(`project "${slug}"`);
 }
 
@@ -45,8 +41,7 @@ export const dynamicParams = true;
 
 export async function generateStaticParams() {
   // Real records only. Prerendering the fallback slugs would bake a 200 page
-  // for a project the CMS does not have — and because the build runs in CI with
-  // no Strapi reachable, that is exactly the list this would otherwise return.
+  // for a project the CMS does not have.
   // `dynamicParams` is true (below), so anything not listed here still renders
   // on demand; an unknown slug reaches `resolveProject` and 404s there.
   const projects = await getProjects();

@@ -30,8 +30,9 @@ function strapiBaseUrl(): string | null {
  * succeeds. Answering `notFound()` instead would cache a 404 for a real
  * article for a whole revalidation window, which is what happened on every
  * deploy while the web pods came up before Strapi did. A first render with no
- * good copy yet gets the error page with status 500, which tells a crawler to
- * come back later rather than that the URL is gone.
+ * good copy yet gets a bare 500 ("Internal Server Error", not app/error.tsx),
+ * which is not cached and tells a crawler to come back later rather than that
+ * the URL is gone.
  */
 export class CmsUnavailableError extends Error {
   constructor(what: string) {
@@ -185,9 +186,11 @@ export async function getProjectBySlug(slug: string): Promise<Lookup<Project>> {
     ['projects'],
   );
 
-  if (!result.ok) return { status: 'unavailable' };
+  // A 200 without a `data` list is not Strapi's answer (a proxy or maintenance
+  // page in between), so it says nothing about whether the record exists.
+  if (!result.ok || !Array.isArray(result.body?.data)) return { status: 'unavailable' };
 
-  const record = result.body?.data?.[0];
+  const record = result.body.data[0];
   return record ? { status: 'found', value: record } : { status: 'missing' };
 }
 
@@ -201,8 +204,10 @@ export async function getPostBySlug(slug: string): Promise<Lookup<Post>> {
     ['posts'],
   );
 
-  if (!result.ok) return { status: 'unavailable' };
+  // A 200 without a `data` list is not Strapi's answer (a proxy or maintenance
+  // page in between), so it says nothing about whether the record exists.
+  if (!result.ok || !Array.isArray(result.body?.data)) return { status: 'unavailable' };
 
-  const record = result.body?.data?.[0];
+  const record = result.body.data[0];
   return record ? { status: 'found', value: record } : { status: 'missing' };
 }

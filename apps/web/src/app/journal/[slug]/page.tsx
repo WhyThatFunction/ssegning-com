@@ -9,7 +9,6 @@ import { Container } from '@/components/container';
 import { RelatedPosts } from '@/components/related-posts';
 import { RichHtml } from '@/components/rich-html';
 import { Section } from '@/components/section';
-import { posts as fallbackPosts } from '@/content/fallback';
 import { prepareArticle } from '@/lib/article';
 import { mediaAlt, resolveMediaUrl } from '@/lib/media';
 import { CmsUnavailableError, getPostBySlug, getPosts } from '@/lib/strapi';
@@ -22,9 +21,8 @@ import type { Post } from '@/lib/types';
  * and has no such article: the URL is wrong, so 404. The CMS did not answer:
  * the URL may be perfectly good, so this is never a 404 -- it throws
  * `CmsUnavailableError`, and Next keeps serving the last good copy of the page
- * (see the class in lib/strapi.ts). The one exception is a slug from the
- * hand-written fallback list, which the index pages link to while the CMS is
- * down and which has no CMS copy to protect.
+ * (see the class in lib/strapi.ts). There is no hand-written fallback here:
+ * a fallback answered at a real URL is cached and indexed like the real page.
  *
  * Answering an article the CMS has never heard of is how
  * /journal/why-i-run-talos-linux and /journal/picking-rust-or-typescript-honestly
@@ -37,8 +35,6 @@ async function resolvePost(slug: string): Promise<Post | null> {
   if (lookup.status === 'found') return lookup.value;
   if (lookup.status === 'missing') return null;
 
-  const fallback = fallbackPosts.find((item) => item.slug === slug);
-  if (fallback) return fallback;
   throw new CmsUnavailableError(`article "${slug}"`);
 }
 
@@ -58,8 +54,7 @@ export const dynamicParams = true;
 
 export async function generateStaticParams() {
   // Real records only. Prerendering the fallback slugs would bake a 200 page
-  // for a article the CMS does not have — and because the build runs in CI with
-  // no Strapi reachable, that is exactly the list this would otherwise return.
+  // for an article the CMS does not have.
   // `dynamicParams` is true (below), so anything not listed here still renders
   // on demand; an unknown slug reaches `resolvePost` and 404s there.
   const posts = await getPosts();

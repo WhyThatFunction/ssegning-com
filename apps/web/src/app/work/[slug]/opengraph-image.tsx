@@ -12,8 +12,9 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { slug } = await params;
   const lookup = await getProjectBySlug(slug);
 
-  // An unreachable CMS is not a missing project: throwing keeps the last good
-  // card instead of caching a 404 for it (see CmsUnavailableError).
+  // An unreachable CMS is not a missing project. This route is rendered per
+  // request, not cached as a page, so there is no last good card to keep: a
+  // 500 tells a crawler to retry, where a 404 told it the card is gone.
   if (lookup.status === 'unavailable') throw new CmsUnavailableError(`the card for "${slug}"`);
   if (lookup.status === 'missing') notFound();
 
