@@ -28,6 +28,11 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/cms/package.json apps/cms/package.json
+# NOTE: this manifest list is duplicated in apps/web/Dockerfile. pnpm needs
+# every workspace member's package.json to resolve --frozen-lockfile, so a
+# new workspace package has to be added to BOTH files or the other image
+# fails its install. Grep for `pnpm-workspace.yaml` before adding one.
+COPY packages/tiptap-schema/package.json packages/tiptap-schema/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-alpine AS builder
@@ -38,6 +43,7 @@ RUN corepack enable
 COPY --from=deps /app ./
 COPY . .
 ENV NODE_ENV=production
+RUN pnpm --filter @ssegning/tiptap-schema build
 RUN pnpm --filter @ssegning/web build
 
 # ---------------------------------------------------------------------------

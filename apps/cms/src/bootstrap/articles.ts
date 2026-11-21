@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { markdownToTiptapJson } from '@ssegning/tiptap-schema';
 import type { Core } from '@strapi/strapi';
-import { markdownToHtml } from '../lib/markdown-to-html';
 
 const ARTICLES_DIR = join(__dirname, 'articles');
 
@@ -162,14 +162,15 @@ export async function publishBundledArticles(strapi: Core.Strapi): Promise<void>
       // `excerpt` and `readingMinutes` stay derived from `article.body`
       // (the raw Markdown) — both `flattenMarkdown` and the word-count
       // estimate above are tuned for Markdown's own emphasis/quote syntax,
-      // not HTML tags, so only the `body` written to Strapi gets converted.
+      // not a serialized document, so only the `body` written to Strapi gets
+      // converted.
       const createdPost = await strapi.documents('api::post.post').create({
         status: 'published',
         data: {
           title: article.title,
           slug: article.slug,
           excerpt: article.excerpt,
-          body: markdownToHtml(article.body),
+          body: await markdownToTiptapJson(article.body),
           readingMinutes: article.readingMinutes,
           seo: {
             metaTitle: article.title,

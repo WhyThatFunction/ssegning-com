@@ -1,32 +1,44 @@
+import {
+  htmlToTiptapJson,
+  looksLikeHtml,
+  looksLikeTiptapJson,
+  markdownToTiptapJson,
+} from '@ssegning/tiptap-schema';
 import type { Core } from '@strapi/strapi';
-import { looksLikeHtml, markdownToHtml } from '../lib/markdown-to-html';
 
 /**
- * One-time boot migration for the `post.body` Markdown -> Tiptap HTML
- * cutover (see `src/api/post/content-types/post/schema.json`, which now
- * declares `body` as the `plugin::tiptap-editor.RichText` custom field
- * instead of `richtext`).
+ * Boot migration that brings every `post.body` to the ONE format the Tiptap
+ * custom field can actually load: a serialized Tiptap document.
  *
- * `publishBundledArticles` (see `articles.ts`) only ever *creates* posts —
- * it never updates an existing row, specifically so an author's in-Strapi
- * edits survive a pod restart. That means the rows that existed before this
- * cutover shipped would otherwise keep their raw Markdown forever and
- * render as garbage in the Tiptap editor / on the site. This function is
- * the one-off complement: it walks every existing post and converts
- * whichever ones still hold Markdown, once.
+ * This field is `plugin::tiptap-editor.RichText`, and the plugin's input
+ * component reads it as `JSON.parse(value)` and writes it back as
+ * `JSON.stringify(editor.getJSON())` — verified in the shipped admin bundle,
+ * not inferred. There is no HTML mode: nothing in the plugin ever calls
+ * `getHTML()` for storage.
  *
- * Written via `strapi.db.query('api::post.post').update(...)`, the same
- * low-level query layer `articles.ts` uses to backdate `publishedAt` —
- * for the same reason: the Document Service's `update()` would create a
- * new draft revision and touch `updatedAt`/publish state, where this
- * migration needs to silently rewrite one field on the existing row(s)
- * without disturbing anything else about them.
+ * So a body has to be converted from whichever of two older shapes it still
+ * holds:
  *
- * Idempotent via `looksLikeHtml`: a post already converted (or authored
- * directly as HTML going forward) is left alone, so re-running this on
- * every boot is safe and cheap once the corpus has been converted. Never
- * throws: each post is handled independently, and a single bad row is
- * logged and skipped rather than blocking boot.
+ *   - **HTML** — written by the first version of this migration, which
+ *     assumed the field stored HTML. Every post ended up here, and every one
+ *     of them rendered in the admin as "This component's content is
+ *     malformed. Please change it or remove this component.", because
+ *     `JSON.parse('<blockquote>…')` throws.
+ *   - **Markdown** — the original `richtext` bodies, for any row that
+ *     predates all of this.
+ *
+ * `publishBundledArticles` (see `articles.ts`) only ever *creates* posts, so
+ * that an author's edits in Strapi survive a pod restart. Existing rows can
+ * therefore only be fixed here.
+ *
+ * Writes through `strapi.db.query(...)`, the same low-level layer
+ * `articles.ts` uses to backdate `publishedAt`: the Document Service's
+ * `update()` would open a new draft revision and touch publish state, where
+ * this needs to rewrite one column and disturb nothing else.
+ *
+ * Idempotent via `looksLikeTiptapJson`, so it is safe and cheap on every
+ * boot once the corpus is converted. Never throws: each post is handled on
+ * its own, and one bad row is logged and skipped rather than blocking boot.
  */
 export async function migrateArticleBodies(strapi: Core.Strapi): Promise<void> {
   let converted = 0;
@@ -46,16 +58,18 @@ export async function migrateArticleBodies(strapi: Core.Strapi): Promise<void> {
 
   for (const post of posts) {
     try {
-      if (!post.body || looksLikeHtml(post.body)) {
+      if (!post.body || looksLikeTiptapJson(post.body)) {
         skipped++;
         continue;
       }
 
-      const html = markdownToHtml(post.body);
+      const body = looksLikeHtml(post.body)
+        ? htmlToTiptapJson(post.body)
+        : await markdownToTiptapJson(post.body);
 
       await strapi.db.query('api::post.post').update({
         where: { id: post.id },
-        data: { body: html },
+        data: { body },
       });
 
       converted++;
