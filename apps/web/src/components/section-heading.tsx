@@ -19,7 +19,7 @@ export function SectionHeading({
             {eyebrow}
           </p>
         ) : null}
-        <h2 className="mt-2 text-heading-lg font-medium tracking-tight text-ink">{title}</h2>
+        <h2 className="mt-2 text-heading-lg font-light tracking-tight text-ink">{title}</h2>
         {description ? <p className="mt-2 max-w-xl text-ink-muted">{description}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

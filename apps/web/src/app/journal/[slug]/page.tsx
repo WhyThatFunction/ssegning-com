@@ -101,7 +101,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           ) : null}
         </div>
 
-        <h1 className="mt-3 text-display font-medium tracking-tight text-balance text-ink">
+        <h1 className="mt-3 text-display font-light tracking-tight text-balance text-ink">
           {post.title}
         </h1>
 

@@ -8,7 +8,7 @@ export function ServiceCard({ service }: { service: Service }) {
     <Link
       href={`/services#${service.slug}`}
       id={service.slug}
-      className="group block rounded-card border border-border p-6 transition-colors duration-150 ease-out hover:border-border-strong"
+      className="group block rounded-card bg-surface-1 p-6 transition-colors duration-150 ease-out hover:bg-surface-2"
     >
       <ServiceIcon name={service.icon} className="h-6 w-6 text-accent" />
       <h3 className="mt-4 text-heading font-medium text-ink">{service.title}</h3>

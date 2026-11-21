@@ -10,9 +10,9 @@ export function ProjectCard({ project }: { project: Project }) {
   return (
     <Link
       href={`/work/${project.slug}`}
-      className="group block overflow-hidden rounded-card border border-border transition-colors duration-150 ease-out hover:border-border-strong"
+      className="group block overflow-hidden rounded-card bg-surface-1 transition-colors duration-150 ease-out hover:bg-surface-2"
     >
-      <div className="relative flex aspect-[16/9] items-center justify-center border-b border-border bg-canvas-subtle">
+      <div className="relative flex aspect-[16/9] items-center justify-center bg-surface-3">
         {coverUrl ? (
           <Image
             src={coverUrl}

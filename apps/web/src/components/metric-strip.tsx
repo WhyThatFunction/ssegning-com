@@ -21,9 +21,11 @@ export function MetricStrip({ metrics }: { metrics: MetricComponent[] }) {
     <dl className={`grid grid-cols-1 gap-8 border-t border-border pt-8 ${gridClass}`}>
       {metrics.map((metric) => (
         <div key={metric.id}>
-          <dd className="font-mono text-3xl font-medium tracking-tight text-accent">
-            {metric.value}
-          </dd>
+          {/* Ink, not accent, and the display face at weight 300: four
+              orange numerals in a row would make the accent the loudest
+              thing on the page, and it is meant to stay rare. Size still
+              carries the emphasis. */}
+          <dd className="text-3xl font-light tracking-tight text-ink">{metric.value}</dd>
           <dt className="mt-1 text-sm text-ink">{metric.label}</dt>
           {metric.detail ? <p className="mt-0.5 text-sm text-ink-muted">{metric.detail}</p> : null}
         </div>

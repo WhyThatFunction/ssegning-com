@@ -150,29 +150,38 @@ function isMermaidCodeBlock(node: AnyChildNode): boolean {
   return /(?:^|\s)language-mermaid(?:\s|$)/.test(node.attribs.class ?? '');
 }
 
-const PARSE_OPTIONS: HTMLReactParserOptions = {
-  replace(domNode) {
-    if (!isElement(domNode) || domNode.name !== 'pre') return undefined;
+/**
+ * Built per render rather than shared, because it carries state: the running
+ * figure number. `html-react-parser` calls `replace` in document order, so
+ * counting inside it numbers the diagrams as a reader meets them.
+ */
+function buildParseOptions(): HTMLReactParserOptions {
+  let figure = 0;
+  return {
+    replace(domNode) {
+      if (!isElement(domNode) || domNode.name !== 'pre') return undefined;
 
-    // Only element children matter for this check — a stray whitespace text
-    // node between `<pre>` and `<code>` (not present in `marked`'s output,
-    // but not guaranteed by the type either) must not defeat detection.
-    const codeChild = domNode.children.find((child) => child.type === 'tag');
-    if (!codeChild || !isMermaidCodeBlock(codeChild)) return undefined;
+      // Only element children matter for this check — a stray whitespace text
+      // node between `<pre>` and `<code>` (not present in `marked`'s output,
+      // but not guaranteed by the type either) must not defeat detection.
+      const codeChild = domNode.children.find((child) => child.type === 'tag');
+      if (!codeChild || !isMermaidCodeBlock(codeChild)) return undefined;
 
-    // `html-react-parser` sits on `html-dom-parser`/`htmlparser2`, which — like
-    // any real HTML parser — decodes character references while building the
-    // DOM: a text node's `.data` is already `-->`, not `--&gt;`, even though
-    // `marked` (and then `sanitize-html`'s own re-serialization) wrote the
-    // entity-escaped form into the HTML string. That decoding is exactly what
-    // mermaid needs: it parses diagram syntax, not HTML, so a literal
-    // `--&gt;` would fail to parse as an arrow. The trap this comment exists
-    // to name: pulling the chart text out with a regex over the raw HTML
-    // string instead of via the parser (e.g. to "keep it simple") would skip
-    // that decoding step entirely and hand mermaid still-escaped text.
-    return <MermaidDiagram chart={textContent(codeChild).replace(/\n$/, '')} />;
-  },
-};
+      // `html-react-parser` sits on `html-dom-parser`/`htmlparser2`, which — like
+      // any real HTML parser — decodes character references while building the
+      // DOM: a text node's `.data` is already `-->`, not `--&gt;`, even though
+      // `marked` (and then `sanitize-html`'s own re-serialization) wrote the
+      // entity-escaped form into the HTML string. That decoding is exactly what
+      // mermaid needs: it parses diagram syntax, not HTML, so a literal
+      // `--&gt;` would fail to parse as an arrow. The trap this comment exists
+      // to name: pulling the chart text out with a regex over the raw HTML
+      // string instead of via the parser (e.g. to "keep it simple") would skip
+      // that decoding step entirely and hand mermaid still-escaped text.
+      figure += 1;
+      return <MermaidDiagram chart={textContent(codeChild).replace(/\n$/, '')} figure={figure} />;
+    },
+  };
+}
 
 export function RichHtml({ children }: { children: string }) {
   // A body that is not a serialized Tiptap document is HTML left over from
@@ -186,5 +195,5 @@ export function RichHtml({ children }: { children: string }) {
   const html = looksLikeTiptapJson(children) ? tiptapJsonToHtml(children) : children;
   const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
 
-  return <div className="prose">{parse(sanitized, PARSE_OPTIONS)}</div>;
+  return <div className="prose">{parse(sanitized, buildParseOptions())}</div>;
 }
