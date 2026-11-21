@@ -5,6 +5,7 @@ import type {
   ContactPage,
   HomePage,
   LegalPage,
+  Lookup,
   Post,
   Project,
   Service,
@@ -21,17 +22,26 @@ function strapiBaseUrl(): string | null {
   return url && url.trim().length > 0 ? url.replace(/\/$/, '') : null;
 }
 
+/** Did the CMS answer at all, and if so with what. */
+type StrapiResult<T> = { ok: true; body: T } | { ok: false };
+
 /**
  * Generic fetch wrapper for the Strapi REST API.
  *
  * Hard requirement: this NEVER throws. Any failure — no STRAPI_URL
  * configured, network error, non-2xx response, malformed JSON, or a request
- * that exceeds the timeout — resolves to `null` so every call site can fail
- * soft into hand-written fallback copy instead of crashing the page.
+ * that exceeds the timeout — resolves to `{ ok: false }` so every call site
+ * can fail soft instead of crashing the page.
+ *
+ * It reports whether the CMS *answered*, separately from what it said,
+ * because those are different facts to a caller looking up one record: an
+ * empty answer means "no such record", an absent answer means "ask again
+ * later". `strapiFetchData` below is for the callers that genuinely do not
+ * need to tell them apart.
  */
-async function strapiFetch<T>(path: string, tags: string[]): Promise<T | null> {
+async function strapiFetch<T>(path: string, tags: string[]): Promise<StrapiResult<T>> {
   const base = strapiBaseUrl();
-  if (!base) return null;
+  if (!base) return { ok: false };
 
   try {
     const response = await fetch(`${base}${path}`, {
@@ -39,12 +49,22 @@ async function strapiFetch<T>(path: string, tags: string[]): Promise<T | null> {
       next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) return { ok: false };
 
-    return (await response.json()) as T;
+    return { ok: true, body: (await response.json()) as T };
   } catch {
-    return null;
+    return { ok: false };
   }
+}
+
+/**
+ * `strapiFetch` for callers that treat "CMS down" and "CMS said nothing" the
+ * same way — every single-type page, which falls back to hand-written copy
+ * either way because there is no URL to be wrong about.
+ */
+async function strapiFetchData<T>(path: string, tags: string[]): Promise<T | null> {
+  const result = await strapiFetch<T>(path, tags);
+  return result.ok ? result.body : null;
 }
 
 /**
@@ -78,7 +98,7 @@ async function strapiFetchAll<T>(path: string, tags: string[]): Promise<T[]> {
   const collected: T[] = [];
 
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const json = await strapiFetch<StrapiListResponse<T>>(
+    const json = await strapiFetchData<StrapiListResponse<T>>(
       `${path}&pagination[page]=${page}&pagination[pageSize]=${STRAPI_MAX_PAGE_SIZE}`,
       tags,
     );
@@ -96,7 +116,7 @@ async function strapiFetchAll<T>(path: string, tags: string[]): Promise<T[]> {
 }
 
 export async function getSiteSetting(): Promise<SiteSetting | null> {
-  const json = await strapiFetch<StrapiSingleResponse<SiteSetting>>(
+  const json = await strapiFetchData<StrapiSingleResponse<SiteSetting>>(
     '/api/site-setting?populate=*',
     ['site-setting'],
   );
@@ -104,21 +124,22 @@ export async function getSiteSetting(): Promise<SiteSetting | null> {
 }
 
 export async function getHomePage(): Promise<HomePage | null> {
-  const json = await strapiFetch<StrapiSingleResponse<HomePage>>('/api/home-page?populate=*', [
+  const json = await strapiFetchData<StrapiSingleResponse<HomePage>>('/api/home-page?populate=*', [
     'home-page',
   ]);
   return json?.data ?? null;
 }
 
 export async function getAboutPage(): Promise<AboutPage | null> {
-  const json = await strapiFetch<StrapiSingleResponse<AboutPage>>('/api/about-page?populate=*', [
-    'about-page',
-  ]);
+  const json = await strapiFetchData<StrapiSingleResponse<AboutPage>>(
+    '/api/about-page?populate=*',
+    ['about-page'],
+  );
   return json?.data ?? null;
 }
 
 export async function getContactPage(): Promise<ContactPage | null> {
-  const json = await strapiFetch<StrapiSingleResponse<ContactPage>>(
+  const json = await strapiFetchData<StrapiSingleResponse<ContactPage>>(
     '/api/contact-page?populate=*',
     ['contact-page'],
   );
@@ -126,7 +147,7 @@ export async function getContactPage(): Promise<ContactPage | null> {
 }
 
 export async function getLegalPage(): Promise<LegalPage | null> {
-  const json = await strapiFetch<StrapiSingleResponse<LegalPage>>('/api/legal-page', [
+  const json = await strapiFetchData<StrapiSingleResponse<LegalPage>>('/api/legal-page', [
     'legal-page',
   ]);
   return json?.data ?? null;
@@ -140,22 +161,30 @@ export async function getProjects(): Promise<Project[]> {
   return strapiFetchAll<Project>('/api/projects?sort=order:asc&populate=*', ['projects']);
 }
 
-export async function getProjectBySlug(slug: string): Promise<Project | null> {
-  const json = await strapiFetch<StrapiListResponse<Project>>(
+export async function getProjectBySlug(slug: string): Promise<Lookup<Project>> {
+  const result = await strapiFetch<StrapiListResponse<Project>>(
     `/api/projects?filters[slug][$eq]=${encodeURIComponent(slug)}&populate=*`,
     ['projects'],
   );
-  return json?.data?.[0] ?? null;
+
+  if (!result.ok) return { status: 'unavailable' };
+
+  const record = result.body?.data?.[0];
+  return record ? { status: 'found', value: record } : { status: 'missing' };
 }
 
 export async function getPosts(): Promise<Post[]> {
   return strapiFetchAll<Post>('/api/posts?sort=publishedAt:desc&populate=*', ['posts']);
 }
 
-export async function getPostBySlug(slug: string): Promise<Post | null> {
-  const json = await strapiFetch<StrapiListResponse<Post>>(
+export async function getPostBySlug(slug: string): Promise<Lookup<Post>> {
+  const result = await strapiFetch<StrapiListResponse<Post>>(
     `/api/posts?filters[slug][$eq]=${encodeURIComponent(slug)}&populate=*`,
     ['posts'],
   );
-  return json?.data?.[0] ?? null;
+
+  if (!result.ok) return { status: 'unavailable' };
+
+  const record = result.body?.data?.[0];
+  return record ? { status: 'found', value: record } : { status: 'missing' };
 }
