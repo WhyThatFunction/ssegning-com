@@ -12,9 +12,23 @@ import { mediaAlt, resolveMediaUrl } from '@/lib/media';
 import { getPostBySlug, getPosts } from '@/lib/strapi';
 import type { Post } from '@/lib/types';
 
+/**
+ * Resolves the article for a slug, or `null` to 404.
+ *
+ * The distinction that matters is between the CMS saying "no such article" and
+ * the CMS not answering. Only the second is a reason to show hand-written
+ * copy: the URL may be perfectly good and the site is merely degraded. The
+ * first means the URL is wrong, and answering it with a article the CMS has
+ * never heard of is how /journal/why-i-run-talos-linux and
+ * /journal/picking-rust-or-typescript-honestly came to return 200 — two
+ * articles live and indexable that exist nowhere in the CMS.
+ */
 async function resolvePost(slug: string): Promise<Post | null> {
-  const post = await getPostBySlug(slug);
-  if (post) return post;
+  const lookup = await getPostBySlug(slug);
+
+  if (lookup.status === 'found') return lookup.value;
+  if (lookup.status === 'missing') return null;
+
   return fallbackPosts.find((item) => item.slug === slug) ?? null;
 }
 
@@ -33,9 +47,13 @@ export const revalidate = 60;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
+  // Real records only. Prerendering the fallback slugs would bake a 200 page
+  // for a article the CMS does not have — and because the build runs in CI with
+  // no Strapi reachable, that is exactly the list this would otherwise return.
+  // `dynamicParams` is true (below), so anything not listed here still renders
+  // on demand; an unknown slug reaches `resolvePost` and 404s there.
   const posts = await getPosts();
-  const list = posts.length > 0 ? posts : fallbackPosts;
-  return list.map((post) => ({ slug: post.slug }));
+  return posts.map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({

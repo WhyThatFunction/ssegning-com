@@ -172,6 +172,23 @@ export interface StrapiSingleResponse<T> {
  * but a caller that fetches a single record by slug does not need the block to
  * be there, and nothing should crash if it is absent.
  */
+/**
+ * The outcome of asking the CMS for ONE record by slug.
+ *
+ * `missing` and `unavailable` are different facts and must not be collapsed:
+ * "the CMS answered and has no such article" means the URL is wrong and the
+ * page should 404, while "the CMS could not be reached" means the URL may be
+ * perfectly good and the page should degrade to hand-written copy rather than
+ * tell a visitor (or a crawler) that their article does not exist.
+ *
+ * Returning `null` for both is what previously left two fallback articles
+ * answering 200 at URLs that exist nowhere in the CMS.
+ */
+export type Lookup<T> =
+  | { status: 'found'; value: T }
+  | { status: 'missing' }
+  | { status: 'unavailable' };
+
 export interface StrapiListResponse<T> {
   data: T[];
   meta?: {
