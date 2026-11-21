@@ -1,4 +1,3 @@
-import { looksLikeTiptapJson, tiptapJsonToHtml } from '@ssegning/tiptap-schema';
 import parse, { type Element, type HTMLReactParserOptions } from 'html-react-parser';
 import sanitizeHtml from 'sanitize-html';
 
@@ -11,12 +10,12 @@ import { MermaidDiagram } from './mermaid-diagram';
 type SanitizeOptions = NonNullable<Parameters<typeof sanitizeHtml>[1]>;
 
 /**
- * Renders `post.body`, which is a **serialized Tiptap document** — the format
- * the `plugin::tiptap-editor` custom field on `api::post.post` stores
- * (`JSON.stringify(editor.getJSON())`). It is turned back into HTML here with
- * `@ssegning/tiptap-schema`, the package that owns the one extension list
- * this project uses, so the website and the CMS cannot drift apart on which
- * nodes exist.
+ * Renders an article body as HTML. The stored `post.body` is a **serialized
+ * Tiptap document** (`JSON.stringify(editor.getJSON())`, the format the
+ * `plugin::tiptap-editor` field on `api::post.post` stores); `prepareArticle`
+ * in `lib/article.ts` turns it into HTML with `@ssegning/tiptap-schema` — the
+ * package that owns the one extension list this project uses — and gives each
+ * `<h2>` an id before it arrives here.
  *
  * `<Markdown>` (`markdown.tsx`) needs no sanitizer: `react-markdown` parses
  * Markdown into an AST and builds a React element tree from it, so there is
@@ -95,6 +94,9 @@ const SANITIZE_OPTIONS: SanitizeOptions = {
     // for that tag, unless `allowedClasses` narrows it further, which we
     // don't need here since `code` never carries any other class.
     code: ['class'],
+    // Written by prepareArticle (lib/article.ts) for the "On this page" rail.
+    // Slugified to [a-z0-9-], so there is no way to smuggle markup through it.
+    h2: ['id'],
     img: ['src', 'alt', 'title', 'width', 'height'],
     th: ['colspan', 'rowspan'],
     td: ['colspan', 'rowspan'],
@@ -183,16 +185,12 @@ function buildParseOptions(): HTMLReactParserOptions {
   };
 }
 
-export function RichHtml({ children }: { children: string }) {
-  // A body that is not a serialized Tiptap document is HTML left over from
-  // before the CMS's boot migration converted it. The two images deploy as
-  // separate Deployments, so there is a window — typically seconds, but
-  // unbounded if the CMS pod is slow to come up — where this app is already
-  // new and the rows are still old. Rendering that HTML directly keeps the
-  // article readable through the window instead of blanking the page. It is
-  // not a supported input format: nothing writes HTML to this field any
-  // more, so once the migration has run this branch is unreachable.
-  const html = looksLikeTiptapJson(children) ? tiptapJsonToHtml(children) : children;
+/**
+ * Renders an article body that `prepareArticle` (lib/article.ts) has already
+ * turned into HTML. The conversion lives there so the page can read the same
+ * headings the rendered body carries ids for.
+ */
+export function RichHtml({ html }: { html: string }) {
   const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
 
   return <div className="prose">{parse(sanitized, buildParseOptions())}</div>;

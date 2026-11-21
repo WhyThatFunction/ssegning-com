@@ -393,3 +393,9 @@ body {
   max-width: calc(100vw - 24px);
   transform: translateX(-50%);
 }
+
+/* Anchored by the "On this page" rail. Room above the heading when jumped to,
+   so it does not land flush against the top of the window. */
+.prose h2[id] {
+  scroll-margin-top: 2.5rem;
+}

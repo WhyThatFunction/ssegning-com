@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { BrandLockup } from '@/components/brand-lockup';
 import { Container } from '@/components/container';
 import { SocialLinks } from '@/components/social-links';
 import type { SiteSetting } from '@/lib/types';
@@ -7,43 +8,92 @@ import type { SiteSetting } from '@/lib/types';
 // Hard-coded (not CMS-driven, unlike the header's siteSetting.navLinks) —
 // /branding is a reference page, not a top-level destination, so it lives
 // here rather than in the primary nav.
-const footerLinks = [
+const moreLinks = [
   { href: '/branding', label: 'Branding' },
   { href: '/legal/imprint', label: 'Imprint' },
   { href: '/legal/privacy', label: 'Privacy' },
   { href: '/legal/terms', label: 'Terms' },
 ];
 
+function ColumnTitle({ children }: { children: string }) {
+  return (
+    <p className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ink-muted">
+      {children}
+    </p>
+  );
+}
+
+const linkClass = 'text-sm text-ink-muted transition-colors duration-150 ease-out hover:text-ink';
+
+/**
+ * A directory rather than a legal strip -- the ending both Retool and Linear
+ * use: grouped columns of links under small uppercase labels, so the bottom of
+ * every page is a place to go next instead of a dead end.
+ *
+ * Every column is built from data the site already has: the brand and its
+ * note, the CMS-managed primary navigation, and the reference and legal pages.
+ * No column exists just to make the grid look full.
+ */
 export function SiteFooter({ siteSetting }: { siteSetting: SiteSetting }) {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border">
-      <Container wide className="flex flex-col gap-8 py-12">
-        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
-          <div className="max-w-sm">
-            <p className="font-mono text-sm text-ink">{siteSetting.siteName}</p>
+    <footer className="mt-12 border-t border-border">
+      <Container wide className="flex flex-col gap-14 py-16">
+        <div className="grid gap-12 sm:grid-cols-2 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="flex max-w-sm flex-col gap-4 sm:col-span-2 md:col-span-1">
+            <Link href="/" className="self-start text-ink">
+              <BrandLockup label={siteSetting.siteName} size={20} />
+            </Link>
             {siteSetting.footerNote ? (
-              <p className="mt-2 text-sm text-ink-muted">{siteSetting.footerNote}</p>
+              <p className="text-sm text-ink-muted">{siteSetting.footerNote}</p>
             ) : null}
+            <SocialLinks socials={siteSetting.socials} />
           </div>
-          <SocialLinks socials={siteSetting.socials} />
+
+          {siteSetting.navLinks.length > 0 ? (
+            <nav aria-label="Site" className="flex flex-col gap-4">
+              <ColumnTitle>Site</ColumnTitle>
+              <ul className="flex flex-col gap-2.5">
+                {siteSetting.navLinks.map((link) => (
+                  <li key={link.id}>
+                    {link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={linkClass}
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link href={link.href} className={linkClass}>
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ) : null}
+
+          <nav aria-label="More" className="flex flex-col gap-4">
+            <ColumnTitle>More</ColumnTitle>
+            <ul className="flex flex-col gap-2.5">
+              {moreLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className={linkClass}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-border pt-6 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono">
-            © {year} {siteSetting.siteName}
-          </p>
-          <ul className="flex items-center gap-5">
-            {footerLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="hover:text-ink">
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <p className="border-t border-border pt-6 font-mono text-xs text-ink-muted">
+          © {year} {siteSetting.siteName}
+        </p>
       </Container>
     </footer>
   );
