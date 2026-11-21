@@ -9,11 +9,12 @@ const EXCERPT_MAX_LENGTH = 200;
 const META_DESCRIPTION_MAX_LENGTH = 155;
 
 /**
- * All 12 articles to publish, and the order to publish them in.
+ * All 13 articles to publish, and the order to publish them in.
  *
  * This is the author's own "Full interleaved calendar" from
  * `~/dev/articles/RELEASE.md` (week 1 -> 12: the 8-piece "Hold My GPU" series
- * woven together with the 4 standalone free topics), NOT the `NN-` filename
+ * woven together with the 4 standalone free topics), plus any later free
+ * topic appended after the finale, NOT the `NN-` filename
  * prefix (which is creation order — see `~/dev/articles/README.md`: "File
  * numbers are creation order, not reading order"). RELEASE.md's hard rules
  * are preserved by construction here: #1/#2 stay adjacent, the gateway
@@ -39,6 +40,11 @@ const RELEASE_ORDER: ReadonlyArray<{ file: string; publishedAt: string }> = [
   { file: '08-the-multiverse-of-secure-ai.md', publishedAt: '2026-08-17T09:00:00.000Z' },
   { file: '11-no-country-for-old-packets.md', publishedAt: '2026-08-24T09:00:00.000Z' },
   { file: '12-pandoras-bucket.md', publishedAt: '2026-08-31T09:00:00.000Z' },
+  // Free topic, dropped after the finale — RELEASE.md allows exactly this
+  // ("trail the last free topic(s) after the finale"), so it does not disturb
+  // the series spine above. Being the newest publishedAt, it is what
+  // `?sort=publishedAt:desc` now surfaces first.
+  { file: '13-mad-max-fury-load.md', publishedAt: '2026-11-21T09:00:00.000Z' },
 ];
 
 interface ParsedArticle {
@@ -129,7 +135,7 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
 }
 
 /**
- * Publishes the 12 bundled articles as `post` entries, on every
+ * Publishes the 13 bundled articles as `post` entries, on every
  * boot. Creates a post only when no post with that slug exists yet — never
  * updates or overwrites one, so the author can freely edit a published post
  * in Strapi without a pod restart reverting it. Never throws: a failure here
