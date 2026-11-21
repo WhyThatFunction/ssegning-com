@@ -275,3 +275,37 @@ body {
   margin-inline: auto;
   height: auto;
 }
+
+/* Diagrams, images and tables break out wider than the measure.
+   
+   `.prose` is capped at 40rem (640px) because that is a comfortable reading
+   width for text — but a flowchart or a screenshot is not text, and squeezing
+   one into the measure makes it unreadable while leaving the surrounding
+   container half empty. These two get 200px more than the text column and are
+   re-centred on it with the standard `left: 50%` + `translateX(-50%)` bleed,
+   which needs the `position: relative` below to have something to offset
+   against.
+   
+   The `min()` is what keeps that safe on small screens: below roughly 575px
+   the viewport cap wins, so a phone gets a full-bleed-minus-gutter diagram
+   rather than one 200px wider than the screen. 24px is the gutter the design
+   keeps on either side at the narrowest width.
+   
+   The enclosing Container is max-w-4xl (896px) less 48px of padding, so at
+   desktop width the 840px result still sits inside it — this widens the
+   content without the page itself gaining a horizontal scrollbar. The canvas
+   and tables keep their own `overflow-x: auto` for anything wider still.
+   
+   This rule comes after `.prose table { width: 100% }` above on purpose: a
+   table is already `display: block` so it can scroll, which means it takes a
+   width like any block and the later rule wins. A table that is still wider
+   than the bleed scrolls inside it rather than widening the page. */
+.prose .mermaid-diagram,
+.prose img,
+.prose table {
+  position: relative;
+  left: 50%;
+  width: min(calc(100% + 200px), calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  transform: translateX(-50%);
+}
