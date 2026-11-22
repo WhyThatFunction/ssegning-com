@@ -18,7 +18,6 @@ export const revalidate = 60;
 
 export default async function ServicesPage() {
   const services = await getServices();
-  const list = services;
 
   return (
     <Section divider={false} className="pt-16 md:pt-24">
@@ -27,9 +26,9 @@ export default async function ServicesPage() {
         title="What I can take off your plate"
         description="Four ways to work together, each scoped tightly enough that you know exactly what you're getting."
       />
-      {list.length > 0 ? (
+      {services.length > 0 ? (
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          {list.map((service) => (
+          {services.map((service) => (
             <ServiceCard key={service.documentId} service={service} />
           ))}
         </div>

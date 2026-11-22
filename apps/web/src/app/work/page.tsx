@@ -16,7 +16,6 @@ export const revalidate = 60;
 
 export default async function WorkPage() {
   const projects = await getProjects();
-  const list = projects;
 
   return (
     <Section divider={false} className="pt-16 md:pt-24">
@@ -25,9 +24,9 @@ export default async function WorkPage() {
         title="Case studies"
         description="A representative slice of recent engagements — the problem, what changed, and what it cost to fix."
       />
-      {list.length > 0 ? (
+      {projects.length > 0 ? (
         <div className="mt-10 grid gap-6 md:grid-cols-2">
-          {list.map((project) => (
+          {projects.map((project) => (
             <ProjectCard key={project.documentId} project={project} />
           ))}
         </div>

@@ -19,8 +19,7 @@ export const revalidate = 60;
 
 export default async function JournalPage() {
   const posts = await getPosts();
-  const list = posts;
-  const [featured, ...rest] = list;
+  const [featured, ...rest] = posts;
 
   return (
     <Section divider={false} className="pt-16 md:pt-24">

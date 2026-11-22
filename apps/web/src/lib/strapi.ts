@@ -63,17 +63,50 @@ async function strapiFetch<T>(path: string, tags: string[]): Promise<StrapiResul
   const base = strapiBaseUrl();
   if (!base) return { ok: false };
 
+  for (let attempt = 0; ; attempt++) {
+    const { result, retryable } = await strapiFetchOnce<T>(`${base}${path}`, tags, attempt);
+    if (result.ok || !retryable || attempt >= RETRY_DELAYS_MS.length) return result;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+  }
+}
+
+/**
+ * Pauses before each retry of a failure that is likely to pass on its own: a
+ * dropped connection, a 5xx or a 429. Without them one blip among the dozens
+ * of requests a build makes fails the whole build, now that nothing falls
+ * back. A timeout is not retried: the reader is already 8 s in.
+ */
+const RETRY_DELAYS_MS = [300, 1_000];
+
+async function strapiFetchOnce<T>(
+  url: string,
+  tags: string[],
+  attempt: number,
+): Promise<{ result: StrapiResult<T>; retryable: boolean }> {
+  let response: Response;
   try {
-    const response = await fetch(`${base}${path}`, {
+    response = await fetch(url, {
+      // Next.js memoizes identical fetches within a render, so a retry with
+      // the same URL and options would get the first attempt's failure back
+      // without touching the network. The header makes each retry its own
+      // request; Strapi ignores it.
+      headers: attempt > 0 ? { 'x-retry-attempt': String(attempt) } : undefined,
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
     });
+  } catch (error) {
+    const timedOut = (error as { name?: unknown } | null)?.name === 'TimeoutError';
+    return { result: { ok: false }, retryable: !timedOut };
+  }
 
-    if (!response.ok) return { ok: false };
+  if (!response.ok) {
+    return { result: { ok: false }, retryable: response.status === 429 || response.status >= 500 };
+  }
 
-    return { ok: true, body: (await response.json()) as T };
+  try {
+    return { result: { ok: true, body: (await response.json()) as T }, retryable: false };
   } catch {
-    return { ok: false };
+    return { result: { ok: false }, retryable: false };
   }
 }
 
@@ -107,7 +140,7 @@ async function strapiFetchSingle<T>(path: string, tags: string[], what: string):
  */
 const STRAPI_MAX_PAGE_SIZE = 100;
 
-/** Belt-and-braces stop so a bad `pageCount` can never spin this forever. */
+/** Belt-and-braces stop so a bad `pageCount` can never spin this forever; hitting it throws. */
 const MAX_PAGES = 50;
 
 /**
@@ -138,16 +171,19 @@ async function strapiFetchAll<T>(path: string, tags: string[], what: string): Pr
     );
 
     if (!Array.isArray(json?.data)) throw new CmsUnavailableError(what);
-    if (json.data.length === 0) break;
+    if (json.data.length === 0) return collected;
     collected.push(...json.data);
 
     const pageCount = json.meta?.pagination?.pageCount;
-    // No `pageCount` (withCount off, or an unexpected shape) means there is
-    // nothing reliable to loop on — stop rather than guess at a next page.
-    if (pageCount === undefined || page >= pageCount) break;
+    if (pageCount === undefined) {
+      // Without a page count, a short page is the only proof this was the last.
+      if (json.data.length < STRAPI_MAX_PAGE_SIZE) return collected;
+      throw new CmsUnavailableError(`${what} (no page count on a full page)`);
+    }
+    if (page >= pageCount) return collected;
   }
 
-  return collected;
+  throw new CmsUnavailableError(`${what} (more than ${MAX_PAGES} pages)`);
 }
 
 export async function getSiteSetting(): Promise<SiteSetting> {
