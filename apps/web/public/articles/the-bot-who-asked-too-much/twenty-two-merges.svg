@@ -66,5 +66,5 @@
   <text class="label muted" x="45.7" y="118">10:08 “Help me troubleshoot why”</text>
   <line class="hotline" x1="788.6" y1="186" x2="788.6" y2="150" stroke-width="1"/>
   <text class="label hotText" x="788.6" y="142" text-anchor="end">14:29 “Merge without asking me”</text>
-  <text class="label muted" x="40" y="290">One night in between. The first message reported a bug; the last one gave up the merge button.</text>
+  <text class="label muted" x="40" y="290">One night in between. The first message reported a bug; the last one stopped the merge questions.</text>
 </svg>
