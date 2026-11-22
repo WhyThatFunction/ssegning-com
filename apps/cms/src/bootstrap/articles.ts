@@ -154,6 +154,13 @@ const RELEASE_ORDER: ReadonlyArray<Release> = [
     // diagrams and illustrations.
     replaces: ['4cbd3b64893cf62572704a078507ccc8c4608a521bdb8e0ba30920542596bdc5'],
   },
+  // Free topic, written by Claude with the owner as co-author: the two days
+  // of work on this site, told through the questions an agent should and
+  // should not ask.
+  {
+    file: '15-the-bot-who-asked-too-much.md',
+    publishedAt: '2026-11-22T14:00:00.000Z',
+  },
 ];
 
 interface ParsedArticle {
