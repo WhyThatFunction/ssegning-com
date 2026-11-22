@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 330" width="840" height="330" role="img" aria-labelledby="title desc">
+  <title id="title">22 pull requests in two days</title>
+  <desc id="desc">The merge times of the 22 pull requests merged in the session, on two days in November 2026, Central European Time. Fourteen on 21 November, from 10:26 to 22:18; eight on 22 November, from 10:08 to 14:29. The session opened on 21 November at 10:08 with "Help me troubleshoot why". The last merge, at 14:29 on the second day, followed the message "Merge without asking me".</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .ctx { fill: #5e5d5b; fill-opacity: 0.45; }
+    .hot, .hotText { fill: #b23a0a; }
+    .hotline { stroke: #b23a0a; }
+    .mutedline { stroke: #5e5d5b; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .ctx { fill: #a8a29c; fill-opacity: 0.45; }
+      .hot, .hotText { fill: #fb923c; }
+      .hotline { stroke: #fb923c; }
+      .mutedline { stroke: #a8a29c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="330"/>
+  <text class="mono muted" x="40" y="48">22 PULL REQUESTS, MERGED · CET</text>
+  <text class="mono muted" x="40" y="80">21 NOV · 14</text>
+  <text class="mono muted" x="597.3" y="80">22 NOV · 8</text>
+  <line class="rule" x1="40" y1="208" x2="573.3" y2="208" stroke-width="1"/>
+  <line class="rule" x1="597.3" y1="208" x2="800" y2="208" stroke-width="1"/>
+  <text class="mono muted" x="585.3" y="212" text-anchor="middle">//</text>
+  <line class="rule" x1="40.0" y1="208" x2="40.0" y2="214" stroke-width="1"/>
+  <text class="mono muted" x="40.0" y="230" text-anchor="middle">10:00</text>
+  <line class="rule" x1="210.7" y1="208" x2="210.7" y2="214" stroke-width="1"/>
+  <text class="mono muted" x="210.7" y="230" text-anchor="middle">14:00</text>
+  <line class="rule" x1="381.3" y1="208" x2="381.3" y2="214" stroke-width="1"/>
+  <text class="mono muted" x="381.3" y="230" text-anchor="middle">18:00</text>
+  <line class="rule" x1="597.3" y1="208" x2="597.3" y2="214" stroke-width="1"/>
+  <text class="mono muted" x="597.3" y="230" text-anchor="middle">10:00</text>
+  <line class="rule" x1="768.0" y1="208" x2="768.0" y2="214" stroke-width="1"/>
+  <text class="mono muted" x="768.0" y="230" text-anchor="middle">14:00</text>
+  <circle class="ctx" cx="58.5" cy="196" r="6"/>
+  <circle class="ctx" cx="59.9" cy="181" r="6"/>
+  <circle class="ctx" cx="61.3" cy="166" r="6"/>
+  <circle class="ctx" cx="100.4" cy="196" r="6"/>
+  <circle class="ctx" cx="111.1" cy="181" r="6"/>
+  <circle class="ctx" cx="111.1" cy="166" r="6"/>
+  <circle class="ctx" cx="158.8" cy="196" r="6"/>
+  <circle class="ctx" cx="158.8" cy="181" r="6"/>
+  <circle class="ctx" cx="158.8" cy="166" r="6"/>
+  <circle class="ctx" cx="162.3" cy="151" r="6"/>
+  <circle class="ctx" cx="175.1" cy="196" r="6"/>
+  <circle class="ctx" cx="212.1" cy="196" r="6"/>
+  <circle class="ctx" cx="355.0" cy="196" r="6"/>
+  <circle class="ctx" cx="564.8" cy="196" r="6"/>
+  <circle class="ctx" cx="603.0" cy="196" r="6"/>
+  <circle class="ctx" cx="625.8" cy="196" r="6"/>
+  <circle class="ctx" cx="642.1" cy="196" r="6"/>
+  <circle class="ctx" cx="642.1" cy="181" r="6"/>
+  <circle class="ctx" cx="648.5" cy="166" r="6"/>
+  <circle class="ctx" cx="659.2" cy="181" r="6"/>
+  <circle class="ctx" cx="736.7" cy="196" r="6"/>
+  <circle class="hot" cx="788.6" cy="196" r="6"/>
+  <line class="mutedline" x1="45.7" y1="184" x2="45.7" y2="124" stroke-width="1" stroke-dasharray="3 3"/>
+  <text class="label muted" x="45.7" y="118">10:08 “Help me troubleshoot why”</text>
+  <line class="hotline" x1="788.6" y1="186" x2="788.6" y2="150" stroke-width="1"/>
+  <text class="label hotText" x="788.6" y="142" text-anchor="end">14:29 “Merge without asking me”</text>
+  <text class="label muted" x="40" y="290">One night in between. The first message reported a bug; the last one gave up the merge button.</text>
+</svg>
