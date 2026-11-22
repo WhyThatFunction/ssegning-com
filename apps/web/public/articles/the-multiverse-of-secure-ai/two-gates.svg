@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 360" width="840" height="360" role="img" aria-labelledby="title desc">
+  <title id="title">Two gates before the model</title>
+  <desc id="desc">A request with a valid token still passes two gates. Failing authentication returns 401, who even are you. Failing the budget check, per minute or per month, returns 429, valid but tapped out. Only then does it reach the model. The most common rejection is a 429.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .box { fill: none; stroke: #d8d5d1; }
+    .accent { fill: #b23a0a; }
+    .accent-stroke { stroke: #b23a0a; fill: none; }
+    .up { fill: #5e5d5b; fill-opacity: 0.35; stroke: #5e5d5b; }
+    .down { fill: none; stroke: #5e5d5b; stroke-dasharray: 4 4; }
+    .num { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 300; font-size: 64px; letter-spacing: -0.02em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .mono-s { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.06em; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .box { stroke: #3a3436; }
+      .accent { fill: #fb923c; }
+      .accent-stroke { stroke: #fb923c; }
+      .up { fill: #a8a29c; fill-opacity: 0.35; stroke: #a8a29c; }
+      .down { stroke: #a8a29c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="360"/>
+  <text class="mono muted" x="40" y="56">A REQUEST WITH A PERFECTLY VALID TOKEN</text>
+
+  <text class="num muted" x="40" y="150">401</text>
+  <text class="label ink" x="240" y="128">Gate 1: is the auth OK?</text>
+  <text class="label muted" x="240" y="152">No: who even are you.</text>
+  <line class="rule" x1="40" y1="176" x2="800" y2="176" stroke-width="1"/>
+
+  <text class="num accent" x="40" y="258">429</text>
+  <text class="label ink" x="240" y="236">Gate 2: is there budget left this minute / month?</text>
+  <text class="label accent" x="240" y="260">No: valid, but you're tapped out. The most common rejection.</text>
+  <line class="rule" x1="40" y1="284" x2="800" y2="284" stroke-width="1"/>
+
+  <text class="mono muted" x="40" y="330">BOTH PASSED</text>
+  <text class="label ink" x="240" y="330">→ the model</text>
+</svg>

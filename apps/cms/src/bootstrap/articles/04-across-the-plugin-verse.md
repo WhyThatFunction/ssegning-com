@@ -9,6 +9,8 @@
 > AI agents — auto-installed on first launch, versioned centrally, swappable without anyone
 > noticing.
 
+![One URL, one command, four things that happen automatically and seven specialist agents: web-search, doc-research, iac, reviewer, test, skill, frontend](/articles/across-the-plugin-verse/one-url.svg)
+
 *Part of a little series for people watching AI eat everything and wondering how you give a
 team superpowers without giving them a 40-page onboarding doc. With apologies to Miles
 Morales for the title.*

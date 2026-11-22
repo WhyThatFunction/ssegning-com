@@ -8,6 +8,8 @@
 > actually stops you isn't the bouncer at all — it's your own wallet. Welcome to the
 > multiverse.
 
+![A request with a valid token still passes two gates before the model. Failing authentication returns 401, who even are you. Failing the budget check returns 429, valid but tapped out, the most common rejection.](/articles/the-multiverse-of-secure-ai/two-gates.svg)
+
 *Part of a little series for people watching AI eat everything and quietly wondering who's
 allowed to use the expensive toys, and who's paying. Title tipping its hat to a certain
 Sorcerer Supreme.*
@@ -40,7 +42,7 @@ That needs a multiverse.
 The same gateway is reachable two completely different ways, and they trust differently:
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph ext["🌐 External plane — the public door"]
       H1[Humans in the chat app]
       H2[Developers' CLI]
@@ -167,22 +169,22 @@ old simple rules, on purpose, because the economics live somewhere else.
 
 ```mermaid
 flowchart TB
-    subgraph U1[Universe 1: two planes]
+    subgraph U1["Universe 1: two planes"]
       P1[Public door] 
       P2[Staff door]
     end
-    subgraph U2[Universe 2: three IDs]
+    subgraph U2["Universe 2: three IDs"]
       I1[JWT] 
       I2[Service token] 
       I3[Static key]
     end
-    subgraph U3[Universe 3: the wallet gate]
+    subgraph U3["Universe 3: the wallet gate"]
       W["Valid token ≠ access.<br/>Budget decides. (429)"]
     end
-    subgraph U4[Universe 4: one person, one bill]
+    subgraph U4["Universe 4: one person, one bill"]
       O[Forwarded identity →<br/>per-person budget]
     end
-    subgraph U5[Universe 5: the tool-route island]
+    subgraph U5["Universe 5: the tool-route island"]
       T[Metered, not gated]
     end
     U1 --> U2 --> U3 --> U4

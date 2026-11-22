@@ -7,6 +7,8 @@
 > human still owns the *intent*, the *verification*, and the *consequences* — and a real
 > team encodes those three as rules a pull request physically cannot pass without honouring.
 
+![Three laws: a human owns intent, verification and consequences, each enforced at the merge gate](/articles/i-developer-three-laws/three-laws.svg)
+
 *Part of a little series for people watching AI eat everything and wondering what's still
 their job. Short answer: the important parts. Title borrowed from Asimov, because three laws
 felt right.*

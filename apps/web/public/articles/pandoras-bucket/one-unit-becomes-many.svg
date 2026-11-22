@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 300" width="840" height="300" role="img" aria-labelledby="title desc">
+  <title id="title">One unit of data becomes 10 to 20</title>
+  <desc id="desc">One unit of real data ends up as 10 to 20 units on disk, once replicas, snapshots, backups, logs, metrics and the backups of those logs are counted. A 2 times increase in systems can be a 10 to 20 times increase in stored bytes.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .ctx { fill: #5e5d5b; fill-opacity: 0.35; }
+    .ctx2 { fill: #5e5d5b; fill-opacity: 0.2; }
+    .hot { fill: #b23a0a; }
+    .hotline { stroke: #b23a0a; }
+    .inkline { stroke: #0a0a0a; }
+    .box { fill: none; stroke: #5e5d5b; stroke-opacity: 0.6; }
+    .hotbox { fill: none; stroke: #b23a0a; }
+    .hotText { fill: #b23a0a; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .value { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .ctx { fill: #a8a29c; fill-opacity: 0.35; }
+      .ctx2 { fill: #a8a29c; fill-opacity: 0.2; }
+      .hot, .hotText { fill: #fb923c; }
+      .hotline { stroke: #fb923c; }
+      .inkline { stroke: #f2efea; }
+      .box { stroke: #a8a29c; }
+      .hotbox { stroke: #fb923c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="300"/>
+  <text class="mono muted" x="40" y="56">UNITS ON DISK FOR 1 UNIT OF REAL DATA</text>
+  <text class="label ink" x="40" y="108">Real data</text>
+  <rect class="ctx" x="220" y="90" width="29.0" height="26" rx="3"/>
+  <text class="value ink" x="259.0" y="108">1</text>
+  <text class="label ink" x="40" y="168">On disk, low end</text>
+  <rect class="ctx" x="220" y="150" width="290.0" height="26" rx="3"/>
+  <text class="value ink" x="520.0" y="168">10</text>
+  <text class="label ink" x="40" y="228">On disk, high end</text>
+  <rect class="hot" x="220" y="210" width="580.0" height="26" rx="3"/>
+  <text class="value ink" x="810.0" y="228">20</text>
+  <line class="rule" x1="40" y1="262" x2="800" y2="262" stroke-width="1"/>
+  <text class="label muted" x="40" y="288">A 2x increase in systems can be a 10 to 20x increase in stored bytes.</text>
+</svg>

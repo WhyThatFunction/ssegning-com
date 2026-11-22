@@ -7,6 +7,8 @@
 > the very SaaS you were trying to escape. The deciding number isn't the price tag. It's
 > your electricity bill and a line item nobody ever writes down.
 
+![The same 70B box over 36 months: 5,520 euros for five V100s in Cameroon counting hardware and power, about 16,320 euros once maintenance is added, against 32,004 euros for the GEX131 rental and about 34,164 euros fully loaded.](/articles/i-almost-bought-five-v100s/three-ways-to-count.svg)
+
 *Part of a little series for people watching AI eat everything around them and quietly
 wondering what's hype and what's real. This one's about money, which tends to cut
 through hype faster than anything.*
@@ -68,11 +70,17 @@ the box is plugged in.
 Same hardware, same purchase price, electricity as the *only* variable:
 
 ```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
 xychart-beta
     title "36-month cost of one 70B box — only the electricity changes"
     x-axis ["V100 CM (typical)", "V100 CM (24/7)", "V100 DE (typical)", "V100 DE (24/7)", "GEX131 rental"]
     y-axis "Euros over 3 years" 0 --> 35000
-    bar [5520, 9300, 8364, 16392, 32004]
+    bar [5520, 9300, 8364, 0, 32004]
+    bar [0, 0, 0, 16392, 0]
 ```
 
 | Scenario | 3-year cost | vs cheap budget SaaS |
@@ -152,6 +160,20 @@ replacement. That near-zero maintenance line is a huge chunk of what the rental 
 actually buys. You're not overpaying for convenience; you're paying someone else to own the
 3 a.m. phone call.
 
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Fully loaded 3-year cost: the owned box and two rentals (euros)"
+    x-axis ["5×V100 (Cameroon)", "GEX44", "GEX131"]
+    y-axis "Euros over 3 years" 0 --> 36000
+    bar [0, 8143, 34164]
+    bar [16320, 0, 0]
+```
+
 The owned box is *still* cheaper than the €34k rental. But it's no longer the runaway win of
 Round 1 — and against the *smaller* rental, once you count the humans, it's now **more**
 expensive.
@@ -187,6 +209,20 @@ What it does to the verdict is one-directional: it widens owning's money lead an
 The fully-loaded owned box (~€16k) now stares down a **~€46k** rental instead of ~€34k. On pure
 euros, the hardware case got *stronger* the very week the rental got *pricier* — which sets up the
 one thing the spreadsheet still refuses to price.
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Monthly rent before and after 15 June 2026 (euros)"
+    x-axis ["GEX44 was", "GEX44 now", "GEX131 was", "GEX131 now"]
+    y-axis "Euros per month" 0 --> 1300
+    bar [184, 232.3, 889, 0]
+    bar [0, 0, 0, 1197.3]
+```
 
 > 🤓 *Nerds:* this was the fourth pricing action of 2026 (setup fees in February, a portfolio-wide
 > monthly bump on 1 April, dedicated setup fees again on 29 April, then the June standardisation),

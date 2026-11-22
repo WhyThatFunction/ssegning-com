@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 320" width="840" height="320" role="img" aria-labelledby="title desc">
+  <title id="title">Three laws, three owners</title>
+  <desc id="desc">The AI may accelerate; a human owns three things. Law 1, intent: a source-of-truth link is required and agents are caged by role. Law 2, verification: evidence is mandatory and AI output is treated as untrusted. Law 3, consequences: decisions are immutable and work you cannot explain does not ship.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #e6e4e1; }
+    .card { fill: #b23a0a; fill-opacity: 0.12; }
+    .card2 { fill: #5e5d5b; fill-opacity: 0.12; }
+    .accent { fill: #b23a0a; }
+    .num { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 300; font-size: 68px; letter-spacing: -0.02em; }
+    .txt { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .tag { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.02em; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .card, .accent { fill: #fb923c; }
+      .card { fill-opacity: 0.16; }
+      .card2 { fill: #a8a29c; fill-opacity: 0.14; }
+    }
+  </style>
+  <rect class="bg" width="840" height="320"/>
+  <text class="mono muted" x="40" y="56">AI ACCELERATES · A HUMAN OWNS THREE THINGS</text>
+  <text class="num accent" x="40" y="150">1</text>
+  <text class="mono muted" x="42" y="180">INTENT</text>
+  <text class="txt ink" x="42" y="212">Source-of-truth link required</text>
+  <text class="txt muted" x="42" y="238">Agents caged by role</text>
+  <text class="num ink" x="310" y="150">2</text>
+  <text class="mono muted" x="312" y="180">VERIFICATION</text>
+  <text class="txt ink" x="312" y="212">Evidence is mandatory</text>
+  <text class="txt muted" x="312" y="238">AI output treated as untrusted</text>
+  <text class="num ink" x="580" y="150">3</text>
+  <text class="mono muted" x="582" y="180">CONSEQUENCES</text>
+  <text class="txt ink" x="582" y="212">Immutable decisions</text>
+  <text class="txt muted" x="582" y="238">Explain it, or don't ship it</text>
+  <line class="rule" x1="40" y1="270" x2="800" y2="270" stroke-width="1"/>
+  <text class="txt muted" x="40" y="300">The merge gate checks all three.</text>
+</svg>

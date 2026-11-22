@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 380" width="840" height="380" role="img" aria-labelledby="title desc">
+  <title id="title">A runaway job against a 121 GiB budget</title>
+  <desc id="desc">On a 121 GiB desktop, one runaway job grew to 39 GiB. The budget reserves about 30 GiB for the OS and desktop, 24 GiB for a local VM, 48 GiB for heavy agent jobs and about 19 GiB of headroom.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .ctx { fill: #5e5d5b; fill-opacity: 0.35; }
+    .ctx2 { fill: #5e5d5b; fill-opacity: 0.2; }
+    .hot { fill: #b23a0a; }
+    .hotline { stroke: #b23a0a; }
+    .inkline { stroke: #0a0a0a; }
+    .box { fill: none; stroke: #5e5d5b; stroke-opacity: 0.6; }
+    .hotbox { fill: none; stroke: #b23a0a; }
+    .hotText { fill: #b23a0a; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .value { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .ctx { fill: #a8a29c; fill-opacity: 0.35; }
+      .ctx2 { fill: #a8a29c; fill-opacity: 0.2; }
+      .hot, .hotText { fill: #fb923c; }
+      .hotline { stroke: #fb923c; }
+      .inkline { stroke: #f2efea; }
+      .box { stroke: #a8a29c; }
+      .hotbox { stroke: #fb923c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="380"/>
+  <text class="mono muted" x="40" y="56">A 121 GIB DESKTOP</text>
+  <text class="label ink" x="40" y="96">The box</text>
+  <rect class="ctx2" x="40" y="106" width="760" height="26" rx="3"/>
+  <text class="value ink" x="48" y="124">121 GiB</text>
+  <text class="label ink" x="40" y="168">One runaway job</text>
+  <rect class="hot" x="40" y="178" width="245.0" height="26" rx="3"/>
+  <text class="value ink" x="295.0" y="196">39 GiB</text>
+  <line class="rule" x1="40" y1="228" x2="800" y2="228" stroke-width="1"/>
+  <text class="mono muted" x="40" y="262">HOW THE BUDGET IS SPLIT</text>
+  <rect class="ctx" x="40.0" y="280" width="186.4" height="28" rx="3"/>
+  <text class="value ink" x="40.0" y="332">~30</text>
+  <text class="mono muted" x="40.0" y="350" style="font-size:10px">OS + DESKTOP</text>
+  <rect class="ctx2" x="228.4" y="280" width="148.7" height="28" rx="3"/>
+  <text class="value ink" x="228.4" y="332">24</text>
+  <text class="mono muted" x="228.4" y="350" style="font-size:10px">LOCAL VM</text>
+  <rect class="hot" x="379.2" y="280" width="299.5" height="28" rx="3"/>
+  <text class="value ink" x="379.2" y="332">48</text>
+  <text class="mono muted" x="379.2" y="350" style="font-size:10px">HEAVY AGENT JOBS</text>
+  <rect class="ctx" x="680.7" y="280" width="117.3" height="28" rx="3"/>
+  <text class="value ink" x="680.7" y="332">~19</text>
+  <text class="mono muted" x="680.7" y="350" style="font-size:10px">HEADROOM</text>
+</svg>

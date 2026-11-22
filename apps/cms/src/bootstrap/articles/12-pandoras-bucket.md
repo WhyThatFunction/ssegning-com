@@ -8,6 +8,8 @@
 > that compounds forever, and the slow realization that the scarce skill was never *building*.
 > It was knowing what to throw away.
 
+![One unit of real data becomes 10 to 20 units on disk; a 2x increase in systems can be a 10 to 20x increase in stored bytes](/articles/pandoras-bucket/one-unit-becomes-many.svg)
+
 *Part of a little series for people watching AI eat everything. This is the philosophical one —
 half tech, half reflection. Title's a pun on Pandora's box, and stick around for the ending,
 because the myth has a twist most people forget.*
@@ -75,6 +77,20 @@ flowchart TB
     M --> BL["+ the backups OF those logs"]
     BL --> Out["= 10–20 units on disk"]
     style Out fill:#fee2e2,stroke:#ef4444
+```
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Growth in systems against growth in stored bytes (times)"
+    x-axis ["Systems built", "Stored bytes, low end", "Stored bytes, high end"]
+    y-axis "times" 0 --> 22
+    bar [2, 10, 0]
+    bar [0, 0, 20]
 ```
 
 So a 2× increase in *systems* can be a 10–20× increase in *stored bytes.* Backups and object
