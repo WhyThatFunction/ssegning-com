@@ -10,7 +10,9 @@
  * routes, and the bootstrap uses the Document Service directly.
  *
  * So every `/api` request is answered as `status=published`, whatever it
- * asked for. Runs after `strapi::query`, whose setter re-serialises the
+ * asked for. This is the outer layer; each content type's service also forces
+ * published content (src/utils/published-only.ts), which holds however the
+ * URL is spelled. Runs after `strapi::query`, whose setter re-serialises the
  * object, so the controllers see the forced value.
  */
 interface Context {
@@ -19,7 +21,12 @@ interface Context {
 }
 
 export default () => async (ctx: Context, next: () => Promise<void>) => {
-  if (ctx.path.startsWith('/api/') && 'status' in ctx.query && ctx.query.status !== 'published') {
+  // Case-insensitive: Strapi's router matches `/API/posts` too.
+  if (
+    /^\/api\//i.test(ctx.path) &&
+    ctx.query.status !== undefined &&
+    ctx.query.status !== 'published'
+  ) {
     ctx.query = { ...ctx.query, status: 'published' };
   }
   await next();

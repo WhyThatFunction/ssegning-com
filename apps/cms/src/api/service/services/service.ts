@@ -1,3 +1,5 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreService('api::service.service');
+import { publishedOnly } from '../../../utils/published-only';
+
+export default factories.createCoreService('api::service.service', publishedOnly);
