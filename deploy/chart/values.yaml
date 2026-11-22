@@ -12,7 +12,7 @@
 web:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/web
-    tag: sha-79ddf9b
+    tag: sha-78d4f7b
     pullPolicy: IfNotPresent
   replicas: 2
   serviceName: ssegning-web
@@ -60,7 +60,7 @@ web:
 cms:
   image:
     repository: ghcr.io/whythatfunction/ssegning-com/cms
-    tag: sha-79ddf9b
+    tag: sha-78d4f7b
     pullPolicy: IfNotPresent
   serviceName: ssegning-cms
   port: 1337
