@@ -33,10 +33,11 @@ interface Release {
   file: string;
   publishedAt: string;
   /**
-   * SHA-256 of post bodies this version of the file may replace: the bodies
+   * `fingerprint()`s of posts this version of the file may replace: what
    * earlier bundled versions wrote. A post is only rewritten while its draft
-   * and its published copy both still hold one of them, so an edit made in
-   * the Strapi admin is never overwritten by a deploy.
+   * and its published copy both still match one of them, so an edit made in
+   * the Strapi admin, to any field the publisher writes, is never overwritten
+   * by a deploy.
    */
   replaces?: readonly string[];
 }
@@ -66,7 +67,7 @@ const RELEASE_ORDER: ReadonlyArray<Release> = [
     publishedAt: '2026-11-22T09:00:00.000Z',
     // The first published version, text only (#21); this one adds the
     // diagrams and illustrations.
-    replaces: ['ea0f74ccf58e24f469333401a4e9299abf05bc568d370e571ca41ce5f0ee211f'],
+    replaces: ['4cbd3b64893cf62572704a078507ccc8c4608a521bdb8e0ba30920542596bdc5'],
   },
 ];
 
@@ -178,7 +179,9 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
     .join('\n')
     .replace(/^\s+/, '');
 
-  const wordCount = body.split(/\s+/).filter(Boolean).length;
+  // Diagram source and image syntax are not read as words.
+  const prose = body.replace(/```mermaid[\s\S]*?```/g, ' ').replace(/!\[[^\]]*\]\([^)]*\)/g, ' ');
+  const wordCount = prose.split(/\s+/).filter(Boolean).length;
   const readingMinutes = Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE));
 
   return {
@@ -193,6 +196,27 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
 
 function sha256(text: string): string {
   return createHash('sha256').update(text).digest('hex');
+}
+
+/**
+ * One hash over every field the publisher writes. An edit in the Strapi admin
+ * to any of them (title, excerpt, body, reading time, SEO title or
+ * description) changes it, so `replaces` only ever matches a post nobody has
+ * touched since the publisher wrote it.
+ */
+export function fingerprint(post: Record<string, unknown> | null | undefined): string | null {
+  if (!post || typeof post.body !== 'string') return null;
+  const seo = (post.seo ?? {}) as Record<string, unknown>;
+  return sha256(
+    JSON.stringify([
+      post.title ?? null,
+      post.excerpt ?? null,
+      post.body,
+      post.readingMinutes ?? null,
+      seo.metaTitle ?? null,
+      seo.metaDescription ?? null,
+    ]),
+  );
 }
 
 /** What the publisher writes for one article, on create and on replace alike. */
@@ -231,7 +255,7 @@ async function setReleaseDate(strapi: Core.Strapi, documentId: string, published
 
 /**
  * Rewrites an existing post from its bundled file when the release lists the
- * body it holds now (`replaces`), and only then. Returns whether it did.
+ * fingerprint it has now (`replaces`), and only then. Returns whether it did.
  */
 async function replaceIfUnedited(
   strapi: Core.Strapi,
@@ -243,17 +267,34 @@ async function replaceIfUnedited(
 
   const posts = strapi.documents('api::post.post');
   const [draft, published] = await Promise.all([
-    posts.findOne({ documentId, status: 'draft' }),
-    posts.findOne({ documentId, status: 'published' }),
+    posts.findOne({ documentId, status: 'draft', populate: { seo: true } }),
+    posts.findOne({ documentId, status: 'published', populate: { seo: true } }),
   ]);
-  const replaceable = (post: Record<string, unknown> | null) =>
-    typeof post?.body === 'string' && release.replaces?.includes(sha256(post.body));
-  if (!replaceable(draft) || !replaceable(published)) return false;
+  const content = await postContent(article);
+  const target = fingerprint(content);
+
+  // A copy may hold an earlier bundled version (listed in `replaces`) or this
+  // one already: a boot that died between update() and publish() leaves the
+  // draft at this version, and must not strand the post on the old one.
+  const known = (fp: string | null) =>
+    fp !== null && (fp === target || (release.replaces?.includes(fp) ?? false));
+  const draftPrint = fingerprint(draft);
+  const publishedPrint = fingerprint(published);
+  if (!known(draftPrint) || !known(publishedPrint)) return false;
+
+  if (draftPrint === target && publishedPrint === target) {
+    // Already this version. A boot that died before the date write left the
+    // publish time in place of the release date; put it back.
+    const at = published?.publishedAt ? new Date(String(published.publishedAt)).getTime() : NaN;
+    if (at !== new Date(article.publishedAt).getTime()) {
+      await setReleaseDate(strapi, documentId, article.publishedAt);
+    }
+    return false;
+  }
 
   // This project has no generated content-type typings, so `data` is typed
   // against an empty attribute map; the shape is the one create() writes.
-  const data = (await postContent(article)) as Parameters<typeof posts.update>[0]['data'];
-  await posts.update({ documentId, data });
+  await posts.update({ documentId, data: content as Parameters<typeof posts.update>[0]['data'] });
   await posts.publish({ documentId });
   await setReleaseDate(strapi, documentId, article.publishedAt);
   return true;
@@ -262,8 +303,8 @@ async function replaceIfUnedited(
 /**
  * Publishes the bundled articles as `post` entries, on every
  * boot. Creates a post when no post with that slug exists yet. An existing
- * post is rewritten only when its release lists the body it still holds
- * (`replaces`), so the author can freely edit a published post in Strapi
+ * post is rewritten only when its release lists the fingerprint it still
+ * has (`replaces`), so the author can freely edit a published post in Strapi
  * without a deploy reverting it. Never throws: a failure here
  * must not block boot.
  */

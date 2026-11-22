@@ -24,13 +24,14 @@ Three ideas from those first days still carry the framework:
 sequenceDiagram
     participant A as Worker A
     participant S as Run store
+    participant N as Notifier
     participant B as Worker B
     A->>S: take the lease on a run
     A->>S: journal step 1
     A->>S: journal step 2
     Note over A: crashes during step 3
     Note over S: the lease expires
-    S--)B: notification (a hint, not the truth)
+    N--)B: wake up (a hint, not the truth)
     B->>S: take the lease
     S-->>B: head and transcript, last committed step 2
     B->>S: journal step 3
@@ -168,7 +169,7 @@ config:
 ---
 xychart-beta
     title "adam ÷ OpenCode: a better change, at about four times the cost"
-    x-axis ["Review score", "Request size", "Cost per run", "Time per run"]
+    x-axis ["Review score (range midpoints)", "Request size", "Cost per run", "Time per run (low reasoning)"]
     y-axis "times OpenCode (line = OpenCode)" 0 --> 4.5
     bar [0, 3.8, 4, 4]
     bar [1.3, 0, 0, 0]
