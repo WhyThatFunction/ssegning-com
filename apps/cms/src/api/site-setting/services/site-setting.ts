@@ -1,3 +1,5 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreService('api::site-setting.site-setting');
+import { publishedOnly } from '../../../utils/published-only';
+
+export default factories.createCoreService('api::site-setting.site-setting', publishedOnly);

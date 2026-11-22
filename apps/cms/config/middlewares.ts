@@ -28,6 +28,8 @@ export default [
   },
   'strapi::poweredBy',
   'strapi::query',
+  // Public /api reads are published-only (src/middlewares/published-only.ts).
+  'global::published-only',
   'strapi::body',
   'strapi::session',
   'strapi::favicon',
