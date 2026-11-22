@@ -72,11 +72,14 @@ async function strapiFetch<T>(path: string, tags: string[]): Promise<StrapiResul
 
 /**
  * Pauses before each retry of a failure that is likely to pass on its own: a
- * dropped connection, a 5xx or a 429. Without them one blip among the dozens
- * of requests a build makes fails the whole build, now that nothing falls
- * back. A timeout is not retried: the reader is already 8 s in.
+ * dropped connection, a timeout, a 5xx or a 429. Without them one blip among
+ * the dozens of requests a build makes fails the whole build, now that
+ * nothing falls back. The 1 s and 3 s pauses ride out a short CMS restart
+ * (a CI smoke build failed during one with 300 ms and 1 s); a CMS that stays
+ * down still throws after the third attempt. Other 4xx answers are not
+ * retried: asking again would get the same answer.
  */
-const RETRY_DELAYS_MS = [300, 1_000];
+const RETRY_DELAYS_MS = [1_000, 3_000];
 
 async function strapiFetchOnce<T>(
   url: string,
@@ -94,9 +97,8 @@ async function strapiFetchOnce<T>(
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
     });
-  } catch (error) {
-    const timedOut = (error as { name?: unknown } | null)?.name === 'TimeoutError';
-    return { result: { ok: false }, retryable: !timedOut };
+  } catch {
+    return { result: { ok: false }, retryable: true };
   }
 
   if (!response.ok) {
