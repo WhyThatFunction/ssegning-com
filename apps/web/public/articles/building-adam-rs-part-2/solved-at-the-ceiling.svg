@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 516" width="840" height="516" role="img" aria-labelledby="title desc">
+  <title id="title">Solved ÷ finished, with 95% intervals</title>
+  <desc id="desc">One run per task, agent and model. DeepSeek V4.1: adam 8 of 8 (interval 68 to 100%), adam-lean 9 of 9 (70 to 100%), OpenCode 9 of 9 (70 to 100%). MiniMax M3: adam 3 of 3 (44 to 100%), adam-lean 4 of 4 (51 to 100%), OpenCode 4 of 4 (51 to 100%). Gemini 3.1 Flash-Lite, highlighted: adam 6 of 10 (31 to 83%), adam-lean 5 of 10 (24 to 76%), OpenCode 4 of 10 (17 to 69%). Every finished run passed on DeepSeek and MiniMax, so the pass rate cannot rank the agents there, and the Gemini intervals overlap.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .ctx { stroke: #5e5d5b; fill: #5e5d5b; }
+    .hi { stroke: #b23a0a; fill: #b23a0a; }
+    .ring { fill: #f8f3f0; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .value { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ring { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .ctx { stroke: #a8a29c; fill: #a8a29c; }
+      .hi { stroke: #fb923c; fill: #fb923c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="516"/>
+  <text class="mono muted" x="40" y="44">SOLVED ÷ FINISHED · ONE RUN PER TASK · 95% INTERVAL</text>
+  <line class="rule" x1="230.0" y1="64" x2="230.0" y2="434" stroke-width="1"/>
+  <line class="rule" x1="352.5" y1="64" x2="352.5" y2="434" stroke-width="1"/>
+  <line class="rule" x1="475.0" y1="64" x2="475.0" y2="434" stroke-width="1"/>
+  <line class="rule" x1="597.5" y1="64" x2="597.5" y2="434" stroke-width="1"/>
+  <line class="rule" x1="720.0" y1="64" x2="720.0" y2="434" stroke-width="1"/>
+  <text class="mono muted" x="40" y="84">DEEPSEEK V4.1</text>
+  <text class="label ink" x="56" y="115">adam</text>
+  <line class="ctx" x1="563.2" y1="110" x2="720.0" y2="110" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="720.0" cy="110" r="6"/>
+  <text class="value ink" x="742" y="115">8/8</text>
+  <text class="label ink" x="56" y="145">adam-lean</text>
+  <line class="ctx" x1="573.0" y1="140" x2="720.0" y2="140" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="720.0" cy="140" r="6"/>
+  <text class="value ink" x="742" y="145">9/9</text>
+  <text class="label ink" x="56" y="175">OpenCode</text>
+  <line class="ctx" x1="573.0" y1="170" x2="720.0" y2="170" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="720.0" cy="170" r="6"/>
+  <text class="value ink" x="742" y="175">9/9</text>
+  <text class="mono muted" x="40" y="212">MINIMAX M3</text>
+  <text class="label ink" x="56" y="243">adam</text>
+  <line class="ctx" x1="445.6" y1="238" x2="720.0" y2="238" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="720.0" cy="238" r="6"/>
+  <text class="value ink" x="742" y="243">3/3</text>
+  <text class="label ink" x="56" y="273">adam-lean</text>
+  <line class="ctx" x1="479.9" y1="268" x2="720.0" y2="268" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="720.0" cy="268" r="6"/>
+  <text class="value ink" x="742" y="273">4/4</text>
+  <text class="label ink" x="56" y="303">OpenCode</text>
+  <line class="ctx" x1="479.9" y1="298" x2="720.0" y2="298" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="720.0" cy="298" r="6"/>
+  <text class="value ink" x="742" y="303">4/4</text>
+  <text class="mono muted" x="40" y="340">GEMINI 3.1 FLASH-LITE</text>
+  <text class="label ink" x="56" y="371">adam</text>
+  <line class="hi" x1="381.9" y1="366" x2="636.7" y2="366" stroke-width="3" stroke-linecap="round"/>
+  <circle class="hi" cx="524.0" cy="366" r="6"/>
+  <text class="value ink" x="742" y="371">6/10</text>
+  <text class="label ink" x="56" y="401">adam-lean</text>
+  <line class="hi" x1="347.6" y1="396" x2="602.4" y2="396" stroke-width="3" stroke-linecap="round"/>
+  <circle class="hi" cx="475.0" cy="396" r="6"/>
+  <text class="value ink" x="742" y="401">5/10</text>
+  <text class="label ink" x="56" y="431">OpenCode</text>
+  <line class="hi" x1="313.3" y1="426" x2="568.1" y2="426" stroke-width="3" stroke-linecap="round"/>
+  <circle class="hi" cx="426.0" cy="426" r="6"/>
+  <text class="value ink" x="742" y="431">4/10</text>
+  <text class="value muted" x="230.0" y="464" text-anchor="middle">0%</text>
+  <text class="value muted" x="352.5" y="464" text-anchor="middle">25%</text>
+  <text class="value muted" x="475.0" y="464" text-anchor="middle">50%</text>
+  <text class="value muted" x="597.5" y="464" text-anchor="middle">75%</text>
+  <text class="value muted" x="720.0" y="464" text-anchor="middle">100%</text>
+  <text class="mono muted" x="40" y="494">EVERY FINISHED RUN PASSED ON DEEPSEEK AND MINIMAX: THE CEILING RANKS NOBODY</text>
+</svg>
