@@ -89,8 +89,8 @@ xychart-beta
     title "Growth in systems against growth in stored bytes (times)"
     x-axis ["Systems built", "Stored bytes, low end", "Stored bytes, high end"]
     y-axis "times" 0 --> 22
-    bar [2, 0, 0]
-    bar [0, 10, 20]
+    bar [2, 10, 0]
+    bar [0, 0, 20]
 ```
 
 So a 2× increase in *systems* can be a 10–20× increase in *stored bytes.* Backups and object

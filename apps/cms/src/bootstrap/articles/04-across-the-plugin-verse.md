@@ -35,21 +35,7 @@ Everyone ends up on a slightly different version. Updating means doing it all ag
 why most teams just… don't, and let everyone freelance their own AI setup. Which is its own
 quiet disaster.
 
-There's a much better way, and it fits in one URL. Count the moves a developer makes:
-
-```mermaid
----
-config:
-  xyChart:
-    height: 340
----
-xychart-beta
-    title "Stages a developer goes through"
-    x-axis ["Old way (stages in the diagram)", "One URL (commands)"]
-    y-axis "Count" 0 --> 7
-    bar [6, 0]
-    bar [0, 1]
-```
+There's a much better way, and it fits in one URL.
 
 ---
 

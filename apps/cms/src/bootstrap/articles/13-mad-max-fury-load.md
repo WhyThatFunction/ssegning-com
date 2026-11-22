@@ -7,6 +7,8 @@
 > app with every agent session inside it. The job that caused the problem gets to try again.
 > More RAM doesn't buy you a safer machine — it buys you a bigger blast radius.
 
+![A runaway job grew to 39 GiB on a 121 GiB desktop; the budget gives 48 GiB to heavy agent jobs and keeps about 19 GiB as headroom](/articles/mad-max-fury-load/budget-and-runaway.svg)
+
 *A standalone infra war-story from the series, for anyone who just discovered that "run a few
 agents in parallel" is a scheduling problem. Title is a pun on* Mad Max: Fury Road *— a convoy
 rationing scarce supplies under one very controlling warlord turned out to be exactly the right
@@ -241,7 +243,5 @@ the machine you can't see working is what keeps the rest of it fast.
 ticket, and let the convoy arrive intact.
 
 ---
-
-![A runaway job grew to 39 GiB on a 121 GiB desktop; the budget gives 48 GiB to heavy agent jobs and keeps about 19 GiB as headroom](/articles/mad-max-fury-load/budget-and-runaway.svg)
 
 *Part of the series · Back to the [index](README.md).*

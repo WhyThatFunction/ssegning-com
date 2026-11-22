@@ -89,22 +89,6 @@ Two different limits, enforced from a shared Redis:
 - **Budget limit** — per month, in dollars. Illustratively $50 (free) / $200 (pro). Stops your
   wallet.
 
-The two budgets, side by side:
-
-```mermaid
----
-config:
-  xyChart:
-    height: 340
----
-xychart-beta
-    title "Monthly budget limit, illustrative (dollars)"
-    x-axis ["Free", "Pro"]
-    y-axis "dollars per month" 0 --> 250
-    bar [50, 0]
-    bar [0, 200]
-```
-
 Trip either one and you get a polite **429 "slow down."** Crucially, *the limit lives in front
 of the model* — you're stopped before you spend money, not billed after.
 
@@ -173,8 +157,8 @@ flowchart TB
     J1 --> J2["2. Price the request"]
     J2 --> J3["3. Check budget → maybe 429"]
     J3 --> J4["4. Pick the best provider"]
-    J4 --> J5["5. Meter + attribute"]
-    J5 --> M["Model (seconds)"]
+    J4 --> M["Model (seconds)"]
+    M -->|"as the answer streams"| J5["5. Meter + attribute"]
     J5 --> O[Dashboards]
     style M fill:#fde68a,stroke:#f59e0b
 ```

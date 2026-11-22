@@ -47,8 +47,8 @@
     <text class="mono-s ink" x="100" y="301" text-anchor="middle">IDENTITY</text>
     <rect class="box" x="168" y="272" width="120" height="48" rx="3"/>
     <text class="mono-s ink" x="228" y="301" text-anchor="middle">ACCOUNTING</text>
-    <rect class="accent-stroke" x="296" y="272" width="120" height="48" rx="3" stroke-width="1.5"/>
-    <text class="mono-s accent" x="356" y="301" text-anchor="middle">BUDGET</text>
+    <rect class="box" x="296" y="272" width="120" height="48" rx="3"/>
+    <text class="mono-s ink" x="356" y="301" text-anchor="middle">BUDGET</text>
     <rect class="box" x="424" y="272" width="120" height="48" rx="3"/>
     <text class="mono-s ink" x="484" y="301" text-anchor="middle">PROVIDERS</text>
     <rect class="box" x="552" y="272" width="120" height="48" rx="3"/>

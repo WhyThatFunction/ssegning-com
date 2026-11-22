@@ -191,22 +191,6 @@ while the bot posts nine nitpicks per PR, and what kills adoption is rarely wron
 > roughly half the claimed number. Which is the real lesson: your bot's precision is whatever your
 > own triage log says it is. Nobody else's number is about your codebase.
 
-Set side by side, the figures quoted above look like this:
-
-```mermaid
----
-config:
-  xyChart:
-    height: 340
----
-xychart-beta
-    title "One word, three definitions: the precision figures quoted above"
-    x-axis ["Vendor proxy, low", "Vendor proxy, high", "Google target", "SWR-Bench best"]
-    y-axis "percent" 0 --> 80
-    bar [49, 76, 50, 0]
-    bar [0, 0, 0, 16.65]
-```
-
 ---
 
 ## …drawn honestly
