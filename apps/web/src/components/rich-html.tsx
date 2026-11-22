@@ -1,4 +1,9 @@
-import parse, { type Element, type HTMLReactParserOptions } from 'html-react-parser';
+import parse, {
+  type DOMNode,
+  domToReact,
+  type Element,
+  type HTMLReactParserOptions,
+} from 'html-react-parser';
 import sanitizeHtml from 'sanitize-html';
 
 import { MermaidDiagram } from './mermaid-diagram';
@@ -159,9 +164,24 @@ function isMermaidCodeBlock(node: AnyChildNode): boolean {
  */
 function buildParseOptions(): HTMLReactParserOptions {
   let figure = 0;
-  return {
+  const options: HTMLReactParserOptions = {
     replace(domNode) {
-      if (!isElement(domNode) || domNode.name !== 'pre') return undefined;
+      if (!isElement(domNode)) return undefined;
+
+      // A table sits in its own scroll container. The container takes the
+      // wide-figure width and scrolls sideways when a table is wider still;
+      // the table keeps `display: table` and fills it. Making the table itself
+      // `display: block` (the way it used to scroll) sizes its rows to their
+      // content, so a narrow table drew short of the figure width.
+      if (domNode.name === 'table') {
+        return (
+          <div className="table-scroll">
+            <table>{domToReact(domNode.children as DOMNode[], options)}</table>
+          </div>
+        );
+      }
+
+      if (domNode.name !== 'pre') return undefined;
 
       // Only element children matter for this check — a stray whitespace text
       // node between `<pre>` and `<code>` (not present in `marked`'s output,
@@ -183,6 +203,7 @@ function buildParseOptions(): HTMLReactParserOptions {
       return <MermaidDiagram chart={textContent(codeChild).replace(/\n$/, '')} figure={figure} />;
     },
   };
+  return options;
 }
 
 /**

@@ -83,7 +83,11 @@ function buildThemeVariables() {
     labelColor: ink,
     errorBkgColor: danger,
     errorTextColor: canvas,
-    // xychart-beta (the "at most one" chart type this house style allows)
+    // xychart-beta. Series take the palette in the order they are declared, and
+    // the house rule is one highlight per chart: declare the context series
+    // first (muted), the series carrying the point second (accent), and an
+    // optional reference line third (ink). To highlight one bar of a set, split
+    // the set into two `bar` series with zeros where the other one has values.
     xyChart: {
       backgroundColor: canvas,
       titleColor: ink,
@@ -91,7 +95,7 @@ function buildThemeVariables() {
       xAxisLineColor: borderStrong,
       yAxisLabelColor: inkMuted,
       yAxisLineColor: borderStrong,
-      plotColorPalette: `${accent}, ${inkMuted}`,
+      plotColorPalette: `${inkMuted}, ${accent}, ${ink}`,
     },
   };
 }
@@ -247,6 +251,30 @@ function harmonizeDiagramColors(container: HTMLElement, dark: boolean) {
  * broken diagram must never blank the page.
  */
 /**
+ * Removes the bars of an `xychart-beta` whose value is 0.
+ *
+ * Mermaid starts the value axis a few pixels above the plot's floor, so a 0
+ * still draws a short bar. That defeats the house way of highlighting one bar
+ * of a set (see `plotColorPalette` in `buildThemeVariables`): split the set into
+ * two `bar` series, with zeros where the other series has values. Each series
+ * renders as `g.bar-plot-N`, N counting every `bar` and `line` in declaration
+ * order, with one rect per value; the values are read back from the source.
+ */
+function hideZeroBars(container: HTMLElement, chart: string): void {
+  if (!/^\s*(?:---[\s\S]*?---\s*)?xychart-beta\b/.test(chart)) return;
+
+  const plots = [...chart.matchAll(/^\s*(bar|line)\b[^[\n]*\[([^\]]*)\]/gm)];
+  plots.forEach(([, kind, list], index) => {
+    if (kind !== 'bar') return;
+    const values = (list ?? '').split(',').map((value) => Number(value.trim()));
+    const rects = container.querySelectorAll(`g.bar-plot-${index} > rect`);
+    rects.forEach((rect, position) => {
+      if (values[position] === 0) rect.remove();
+    });
+  });
+}
+
+/**
  * `figure` is the diagram's position among the article's diagrams, counted by
  * `RichHtml`. Omit it to render without a caption bar.
  */
@@ -305,6 +333,7 @@ export function MermaidDiagram({ chart, figure }: { chart: string; figure?: numb
         if (!cancelled && containerRef.current) {
           containerRef.current.innerHTML = svg;
           harmonizeDiagramColors(containerRef.current, dark);
+          hideZeroBars(containerRef.current, chart);
           setState('ok');
         }
       } catch (error) {
