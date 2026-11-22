@@ -9,6 +9,8 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: '/api/',
     },
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    // Pages from this app, and the CMS's content sitemap it proxies
+    // (app/sitemap-content.xml/route.ts).
+    sitemap: [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/sitemap-content.xml`],
   };
 }

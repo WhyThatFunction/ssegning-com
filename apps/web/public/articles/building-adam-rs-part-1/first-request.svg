@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 300" width="840" height="300" role="img" aria-labelledby="title desc">
+  <title id="title">Tokens sent in a first request</title>
+  <desc id="desc">ADR 0066: a "Hi" costs about 22 000 tokens today. The target is under 5 000 tokens for a chat agent and under 8 000 for the coder.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .now { fill: #5e5d5b; fill-opacity: 0.35; }
+    .goal { fill: #b23a0a; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .value { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .now { fill: #a8a29c; fill-opacity: 0.35; }
+      .goal { fill: #fb923c; }
+    }
+  </style>
+
+  <rect class="bg" width="840" height="300"/>
+
+  <text class="mono muted" x="40" y="56">TOKENS IN A FIRST REQUEST · ADR 0066</text>
+
+  <!-- Bars start at x=220; 22 000 tokens = 520px, so 1px ≈ 42.3 tokens -->
+  <text class="label ink" x="40" y="112">"Hi", today</text>
+  <rect class="now" x="220" y="94" width="520" height="26" rx="3"/>
+  <text class="value ink" x="750" y="112">22 000</text>
+
+  <text class="label ink" x="40" y="172">Chat agent, goal</text>
+  <rect class="goal" x="220" y="154" width="118.2" height="26" rx="3"/>
+  <text class="value ink" x="348" y="172">&lt; 5 000</text>
+
+  <text class="label ink" x="40" y="232">Coder, goal</text>
+  <rect class="goal" x="220" y="214" width="189.1" height="26" rx="3"/>
+  <text class="value ink" x="419" y="232">&lt; 8 000</text>
+
+  <line class="rule" x1="220" y1="80" x2="220" y2="254" stroke-width="1"/>
+  <text class="mono muted" x="220" y="276">TOOLS COME IN GROUPS, EACH BEHIND A SMALL LOADER</text>
+</svg>

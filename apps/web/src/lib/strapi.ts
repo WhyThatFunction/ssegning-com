@@ -269,3 +269,26 @@ export async function getPostBySlug(slug: string): Promise<Lookup<Post>> {
   const record = result.body.data[0];
   return record ? { status: 'found', value: record } : { status: 'missing' };
 }
+
+/**
+ * The content sitemap the CMS builds (`GET /api/sitemap.xml`, see
+ * apps/cms/src/api/sitemap), as XML text, or `null` when the CMS did not
+ * answer with one. Never cached here: the CMS already tells crawlers how
+ * long to keep it, and a sitemap must never be served stale from a failure.
+ */
+export async function getContentSitemapXml(): Promise<string | null> {
+  const base = strapiBaseUrl();
+  if (!base) return null;
+
+  try {
+    const response = await fetch(`${base}/api/sitemap.xml`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    const xml = await response.text();
+    return xml.startsWith('<?xml') ? xml : null;
+  } catch {
+    return null;
+  }
+}
