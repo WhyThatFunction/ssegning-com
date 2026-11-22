@@ -283,16 +283,19 @@ body {
   border: 1px solid var(--color-border);
 }
 
-/* GFM tables (from post.body — see components/rich-html.tsx). The wrapper
-   scrolls horizontally on its own, the same precedent as
-   .mermaid-diagram-canvas below, so a wide table never forces the page body
-   itself to scroll sideways. */
+/* Tables (from post.body — see components/rich-html.tsx). Each sits in a
+   .table-scroll container that scrolls horizontally on its own, the same
+   precedent as .mermaid-diagram-canvas below, so a wide table never forces the
+   page body itself to scroll sideways. The table stays `display: table` and
+   fills the container: as `display: block` its rows shrank to their content. */
+.prose .table-scroll {
+  overflow-x: auto;
+}
+
 .prose table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9em;
-  display: block;
-  overflow-x: auto;
 }
 
 .prose th,
@@ -379,13 +382,12 @@ body {
    would bleed that one too, inside an element already bled, offsetting it
    twice.
    
-   This rule comes after `.prose table { width: 100% }` above on purpose: a
-   table is already `display: block` so it can scroll, which means it takes a
-   width like any block and the later rule wins. A table that is still wider
-   than the bleed scrolls inside it rather than widening the page. */
+   Tables bleed through their .table-scroll container, a plain block that
+   takes this width like any other; a table wider still scrolls inside it
+   rather than widening the page. */
 .prose .mermaid-diagram,
 .prose img,
-.prose table,
+.prose .table-scroll,
 .prose > pre {
   position: relative;
   left: 50%;
