@@ -55,7 +55,6 @@ interface ParsedArticle {
   slug: string;
   title: string;
   body: string;
-  excerpt: string;
   readingMinutes: number;
   publishedAt: string;
 }
@@ -63,20 +62,6 @@ interface ParsedArticle {
 /** Strips the filename's creation-order `NN-` prefix and `.md` extension to get the slug. */
 function slugFromFilename(file: string): string {
   return file.replace(/\.md$/, '').replace(/^\d+-/, '');
-}
-
-/** Flattens light Markdown emphasis/quote markup to plain prose for use in excerpts/meta text. */
-function flattenMarkdown(text: string): string {
-  // Collapse to a single line FIRST — the belief/reality blockquote wraps its
-  // *italic* span across multiple `>`-prefixed lines, and a naive `.+?` match
-  // (no `s` flag) can't cross the embedded newline.
-  const singleLine = text.replace(/^>\s?/gm, '').replace(/\s+/g, ' ').trim();
-
-  return singleLine
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/\*(.+?)\*/g, '$1')
-    .replace(/`(.+?)`/g, '$1')
-    .trim();
 }
 
 /** Truncates to `maxLength` at a word boundary, appending an ellipsis when cut short. */
@@ -87,32 +72,46 @@ function truncate(text: string, maxLength: number): string {
   return `${cut.slice(0, lastSpace > 0 ? lastSpace : maxLength)}…`;
 }
 
+/** A node of the Tiptap document `markdownToTiptapJson` produces. */
+interface DocNode {
+  type: string;
+  text?: string;
+  content?: DocNode[];
+}
+
+/** The visible text of a node: marks, link targets and images contribute nothing. */
+function textOf(node: DocNode): string {
+  if (node.type === 'text') return node.text ?? '';
+  if (node.type === 'hardBreak') return ' ';
+  // Inline content of a paragraph joins as written; block children of a
+  // blockquote are separate sentences and need a space between them.
+  return (node.content ?? []).map(textOf).join(node.type === 'paragraph' ? '' : ' ');
+}
+
 /**
- * The first plain paragraph after the H1: the excerpt for an article that
- * opens with prose instead of the series' belief/reality blockquote.
+ * The excerpt: the article's first prose block. For the series that is the
+ * leading belief/reality blockquote; for an article that opens with prose, its
+ * first paragraph. Read from the parsed document rather than from Markdown
+ * lines, so lists, tables, code, images and link URLs can never leak into it.
+ * An article with no prose at all gives an empty excerpt.
  */
-function firstParagraph(lines: string[], titleLineIndex: number): string[] {
-  const paragraph: string[] = [];
-  for (let i = titleLineIndex + 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.trim() === '') {
-      if (paragraph.length > 0) break;
-      continue;
-    }
-    if (paragraph.length === 0 && /^(#|>|```|\||[-*+] |\d+\. |<)/.test(line)) return [];
-    paragraph.push(line);
+function excerptFromDoc(doc: DocNode): string {
+  for (const node of doc.content ?? []) {
+    if (node.type !== 'blockquote' && node.type !== 'paragraph') continue;
+    const text = textOf(node).replace(/\s+/g, ' ').trim();
+    if (text) return truncate(text, EXCERPT_MAX_LENGTH);
   }
-  return paragraph;
+  return '';
 }
 
 /**
  * Parses one bundled article's Markdown into the shape the `post` content
- * type expects: title/body split from the leading H1, an excerpt distilled
- * from the leading belief/reality blockquote (or the first paragraph when
- * there is none), and a reading-time estimate.
+ * type expects: title/body split from the leading H1 and a reading-time
+ * estimate. The excerpt is read from the converted document (excerptFromDoc).
  */
 function parseArticle(file: string, publishedAt: string): ParsedArticle {
-  const raw = readFileSync(join(ARTICLES_DIR, file), 'utf-8');
+  // An editor-saved byte-order mark would hide the leading `# ` H1.
+  const raw = readFileSync(join(ARTICLES_DIR, file), 'utf-8').replace(/^\uFEFF/, '');
   const lines = raw.split('\n');
 
   const titleLineIndex = lines.findIndex((line) => line.startsWith('# '));
@@ -128,26 +127,6 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
     .join('\n')
     .replace(/^\s+/, '');
 
-  // The leading belief/reality blockquote: the first contiguous run of
-  // `>`-prefixed lines after the H1 (skipping the blank line between them).
-  const blockquoteLines: string[] = [];
-  let inBlockquote = false;
-  for (let i = titleLineIndex + 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.startsWith('>')) {
-      blockquoteLines.push(line);
-      inBlockquote = true;
-    } else if (inBlockquote) {
-      break;
-    }
-  }
-  const excerptSource = flattenMarkdown(
-    (blockquoteLines.length > 0 ? blockquoteLines : firstParagraph(lines, titleLineIndex)).join(
-      '\n',
-    ),
-  );
-  const excerpt = truncate(excerptSource, EXCERPT_MAX_LENGTH);
-
   const wordCount = body.split(/\s+/).filter(Boolean).length;
   const readingMinutes = Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE));
 
@@ -155,7 +134,6 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
     slug: slugFromFilename(file),
     title,
     body,
-    excerpt,
     readingMinutes,
     publishedAt,
   };
@@ -185,22 +163,22 @@ export async function publishBundledArticles(strapi: Core.Strapi): Promise<void>
         continue;
       }
 
-      // `excerpt` and `readingMinutes` stay derived from `article.body`
-      // (the raw Markdown) — both `flattenMarkdown` and the word-count
-      // estimate above are tuned for Markdown's own emphasis/quote syntax,
-      // not a serialized document, so only the `body` written to Strapi gets
-      // converted.
+      // `readingMinutes` counts words in the raw Markdown; the excerpt is read
+      // from the converted document, where the parser has already told prose
+      // apart from lists, tables, code and link URLs.
+      const body = await markdownToTiptapJson(article.body);
+      const excerpt = excerptFromDoc(JSON.parse(body) as DocNode);
       const createdPost = await strapi.documents('api::post.post').create({
         status: 'published',
         data: {
           title: article.title,
           slug: article.slug,
-          excerpt: article.excerpt,
-          body: await markdownToTiptapJson(article.body),
+          excerpt,
+          body,
           readingMinutes: article.readingMinutes,
           seo: {
             metaTitle: article.title,
-            metaDescription: truncate(article.excerpt, META_DESCRIPTION_MAX_LENGTH),
+            metaDescription: truncate(excerpt, META_DESCRIPTION_MAX_LENGTH),
           },
         },
       });
