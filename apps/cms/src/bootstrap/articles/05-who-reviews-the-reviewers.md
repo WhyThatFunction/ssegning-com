@@ -9,6 +9,8 @@
 > deterministic checks, because a robot's opinion can be confidently, fluently, and occasionally
 > *maliciously* wrong.
 
+![Three lanes: gates are human-authored and mechanical, grounding is evidence the AI produces by running analyzers, judgment is the model's opinion that only advises](/articles/who-reviews-the-reviewers/three-lanes.svg)
+
 *Part of a little series for people watching AI eat everything and wondering whether they're
 about to be code-reviewed by a machine that hallucinates. Title with apologies to Alan Moore —
 "who watches the watchmen" was always the right question.*
@@ -188,6 +190,22 @@ while the bot posts nine nitpicks per PR, and what kills adoption is rarely wron
 > applied. Meanwhile, independent re-tests of vendor self-benchmarks routinely come back at
 > roughly half the claimed number. Which is the real lesson: your bot's precision is whatever your
 > own triage log says it is. Nobody else's number is about your codebase.
+
+Set side by side, the figures quoted above look like this:
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "One word, three definitions: the precision figures quoted above"
+    x-axis ["Vendor proxy, low", "Vendor proxy, high", "Google target", "SWR-Bench best"]
+    y-axis "percent" 0 --> 80
+    bar [49, 76, 50, 0]
+    bar [0, 0, 0, 16.65]
+```
 
 ---
 

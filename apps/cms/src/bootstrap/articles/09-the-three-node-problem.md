@@ -8,6 +8,8 @@
 > treat two of those three nodes as disposable at the same time, the whole cluster freezes —
 > and won't even let you fix it.
 
+![Three control-plane nodes, majority is two. With 3 of 3 up writes are OK; with 2 of 3 up (lose 1) writes are still OK; with 1 of 3 up (lose 2 at once) there is no majority and the API is frozen.](/articles/the-three-node-problem/quorum.svg)
+
 *Part of a little series for people watching AI eat everything and discovering that the
 boring infrastructure underneath has opinions. Title is a pun on Liu Cixin's *Three-Body
 Problem* — three bodies with no stable orbit turns out to be the right metaphor for three nodes.*
@@ -50,13 +52,13 @@ cliff nobody mentioned:
 ```mermaid
 flowchart TB
     subgraph ok1["All 3 up"]
-      A1[✅ 3 of 3 agree → majority → writes OK]
+      A1["✅ 3 of 3 agree → majority → writes OK"]
     end
     subgraph ok2["Lose 1"]
-      A2[✅ 2 of 3 agree → still a majority → writes OK]
+      A2["✅ 2 of 3 agree → still a majority → writes OK"]
     end
     subgraph bad["Lose 2 at once"]
-      A3[❌ 1 of 3 → NOT a majority → no writes → API frozen]
+      A3["❌ 1 of 3 → NOT a majority → no writes → API frozen"]
     end
     ok1 --> ok2 --> bad
     style A1 fill:#d1fae5,stroke:#10b981
@@ -121,6 +123,22 @@ failure (majority of four is three), so you paid for a fourth node and bought *n
 adding more ways to split the vote. Odd numbers only. Three is the cheapest number that's
 genuinely HA; five is for when a double failure is a real risk and you'll pay to survive it.
 
+The same table as a graph: how many nodes each size can lose.
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Node failures survived: four buys nothing over three"
+    x-axis ["1 node", "3 nodes", "4 nodes", "5 nodes"]
+    y-axis "nodes you can lose" 0 --> 3
+    bar [0, 0, 1, 2]
+    bar [0, 1, 0, 0]
+```
+
 > The deeper point: in a consensus system, nodes are **voters, not replicas.** "I have three, so
 > I can lose two" is replica-thinking. The truth is "I have three, so I can lose *one* and still
 > hold an election."
@@ -132,11 +150,11 @@ genuinely HA; five is for when a double failure is a real risk and you'll pay to
 You *can* rebuild control planes freely — the trick is respecting the majority while you do it:
 
 ```mermaid
-flowchart LR
-    Q{Is the API still answering?}
-    Q -->|Yes → cluster is healthy| One[Replace nodes ONE at a time.<br/>Wait for each to rejoin before the next.]
-    Q -->|No → already broken| Glass[Break-glass restore.<br/>Don't replace in parallel.]
-    One --> Safe[Majority never drops below 2 ✅]
+flowchart TB
+    Q{"Is the API still answering?"}
+    Q -->|"Yes: cluster is healthy"| One["Replace nodes ONE at a time.<br/>Wait for each to rejoin before the next."]
+    Q -->|"No: already broken"| Glass["Break-glass restore.<br/>Don't replace in parallel."]
+    One --> Safe["Majority never drops below 2 ✅"]
     style Safe fill:#d1fae5,stroke:#10b981
     style Glass fill:#fde68a,stroke:#f59e0b
 ```

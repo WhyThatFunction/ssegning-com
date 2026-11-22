@@ -9,6 +9,8 @@
 > AI agents — auto-installed on first launch, versioned centrally, swappable without anyone
 > noticing.
 
+![One URL, one command, four things that happen automatically and seven specialist agents: web-search, doc-research, iac, reviewer, test, skill, frontend](/articles/across-the-plugin-verse/one-url.svg)
+
 *Part of a little series for people watching AI eat everything and wondering how you give a
 team superpowers without giving them a 40-page onboarding doc. With apologies to Miles
 Morales for the title.*
@@ -33,7 +35,21 @@ Everyone ends up on a slightly different version. Updating means doing it all ag
 why most teams just… don't, and let everyone freelance their own AI setup. Which is its own
 quiet disaster.
 
-There's a much better way, and it fits in one URL.
+There's a much better way, and it fits in one URL. Count the moves a developer makes:
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Stages a developer goes through"
+    x-axis ["Old way (stages in the diagram)", "One URL (commands)"]
+    y-axis "Count" 0 --> 7
+    bar [6, 0]
+    bar [0, 1]
+```
 
 ---
 

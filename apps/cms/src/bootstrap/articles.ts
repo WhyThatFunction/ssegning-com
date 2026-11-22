@@ -42,24 +42,109 @@ interface Release {
   replaces?: readonly string[];
 }
 
+/**
+ * The `fingerprint()` of each live article before the 2026-11-22 visuals
+ * revamp, which gave every article a lead illustration, graphs of its own
+ * numbers where it has numbers, and readable diagrams. Each live post was
+ * checked field by field against what the publisher generated from its
+ * bundled file, so none of these fingerprints covers an admin edit.
+ */
+const REVAMP_V1: Readonly<Record<string, string>> = {
+  '01-gpu-plus-vllm-and-youre-done.md':
+    'bbac73c0a92781d98093469c184b3c4cb8b6be3c8de3aaf5f65eed2eb4a9244e',
+  '02-i-almost-bought-five-v100s.md':
+    '3308e890bf0b196b614447da94789a37c455bdcf5e9ebb8cce8ecf94aa650f64',
+  '03-just-point-it-at-the-url.md':
+    '19d8f1e7163c3b8788fe4c5c00ba3f434ac962ab1f8f1fd3b75d646cf22dbdbd',
+  '04-across-the-plugin-verse.md':
+    'a39007fd5c20e2e240a1801ada9946ff29cf174a701a9b77ed33f11bd6eb784e',
+  '05-who-reviews-the-reviewers.md':
+    '8847a1bd7a70b6a9b4959ba24a342d45ecc0c0dd655bc2eea74ecf9bcf00b5ac',
+  '06-i-developer-three-laws.md':
+    'a0bb6042c736a6a251ce4f5a9872f3357a9935bbfd4f27ae6bceaffbf4f049dd',
+  '07-everything-everywhere-all-at-once.md':
+    '2c3d4d132aebbed7d8268054486a1ef25feabee93d11c3d098543f5f71230ea5',
+  '08-the-multiverse-of-secure-ai.md':
+    '77d79197fea911449723fe95e91879514e4a1d543e6f805c18959af89617c3c4',
+  '09-the-three-node-problem.md':
+    '87ac0b683e32a64fd2cad30277d67c5f36597d283b63b693c8b6fa9461fa02e0',
+  '10-git-hog-day.md': '414874b0b6154ac81fe6d9f81eb1a51f0f21854850ef35d745f1fa85b9e2b2c7',
+  '11-no-country-for-old-packets.md':
+    'd8a271010b7f912c273386e56dba6d6436693ff88242d4d104b27574dfbf7239',
+  '12-pandoras-bucket.md': '4b7b1273ceca6abd54621347a6b15d2807bcee52c30f7f04ebf8682338790c48',
+  '13-mad-max-fury-load.md': 'd1fc739325d7d9cb0a47c5dbd63f1805db20e797be04ead27d589e4faa496475',
+};
+
 const RELEASE_ORDER: ReadonlyArray<Release> = [
-  { file: '01-gpu-plus-vllm-and-youre-done.md', publishedAt: '2026-06-15T09:00:00.000Z' },
-  { file: '02-i-almost-bought-five-v100s.md', publishedAt: '2026-06-22T09:00:00.000Z' },
-  { file: '10-git-hog-day.md', publishedAt: '2026-06-29T09:00:00.000Z' },
-  { file: '06-i-developer-three-laws.md', publishedAt: '2026-07-06T09:00:00.000Z' },
-  { file: '05-who-reviews-the-reviewers.md', publishedAt: '2026-07-13T09:00:00.000Z' },
-  { file: '04-across-the-plugin-verse.md', publishedAt: '2026-07-20T09:00:00.000Z' },
-  { file: '09-the-three-node-problem.md', publishedAt: '2026-07-27T09:00:00.000Z' },
-  { file: '07-everything-everywhere-all-at-once.md', publishedAt: '2026-08-03T09:00:00.000Z' },
-  { file: '03-just-point-it-at-the-url.md', publishedAt: '2026-08-10T09:00:00.000Z' },
-  { file: '08-the-multiverse-of-secure-ai.md', publishedAt: '2026-08-17T09:00:00.000Z' },
-  { file: '11-no-country-for-old-packets.md', publishedAt: '2026-08-24T09:00:00.000Z' },
-  { file: '12-pandoras-bucket.md', publishedAt: '2026-08-31T09:00:00.000Z' },
+  {
+    file: '01-gpu-plus-vllm-and-youre-done.md',
+    publishedAt: '2026-06-15T09:00:00.000Z',
+    replaces: [REVAMP_V1['01-gpu-plus-vllm-and-youre-done.md']],
+  },
+  {
+    file: '02-i-almost-bought-five-v100s.md',
+    publishedAt: '2026-06-22T09:00:00.000Z',
+    replaces: [REVAMP_V1['02-i-almost-bought-five-v100s.md']],
+  },
+  {
+    file: '10-git-hog-day.md',
+    publishedAt: '2026-06-29T09:00:00.000Z',
+    replaces: [REVAMP_V1['10-git-hog-day.md']],
+  },
+  {
+    file: '06-i-developer-three-laws.md',
+    publishedAt: '2026-07-06T09:00:00.000Z',
+    replaces: [REVAMP_V1['06-i-developer-three-laws.md']],
+  },
+  {
+    file: '05-who-reviews-the-reviewers.md',
+    publishedAt: '2026-07-13T09:00:00.000Z',
+    replaces: [REVAMP_V1['05-who-reviews-the-reviewers.md']],
+  },
+  {
+    file: '04-across-the-plugin-verse.md',
+    publishedAt: '2026-07-20T09:00:00.000Z',
+    replaces: [REVAMP_V1['04-across-the-plugin-verse.md']],
+  },
+  {
+    file: '09-the-three-node-problem.md',
+    publishedAt: '2026-07-27T09:00:00.000Z',
+    replaces: [REVAMP_V1['09-the-three-node-problem.md']],
+  },
+  {
+    file: '07-everything-everywhere-all-at-once.md',
+    publishedAt: '2026-08-03T09:00:00.000Z',
+    replaces: [REVAMP_V1['07-everything-everywhere-all-at-once.md']],
+  },
+  {
+    file: '03-just-point-it-at-the-url.md',
+    publishedAt: '2026-08-10T09:00:00.000Z',
+    replaces: [REVAMP_V1['03-just-point-it-at-the-url.md']],
+  },
+  {
+    file: '08-the-multiverse-of-secure-ai.md',
+    publishedAt: '2026-08-17T09:00:00.000Z',
+    replaces: [REVAMP_V1['08-the-multiverse-of-secure-ai.md']],
+  },
+  {
+    file: '11-no-country-for-old-packets.md',
+    publishedAt: '2026-08-24T09:00:00.000Z',
+    replaces: [REVAMP_V1['11-no-country-for-old-packets.md']],
+  },
+  {
+    file: '12-pandoras-bucket.md',
+    publishedAt: '2026-08-31T09:00:00.000Z',
+    replaces: [REVAMP_V1['12-pandoras-bucket.md']],
+  },
   // Free topic, dropped after the finale — RELEASE.md allows exactly this
   // ("trail the last free topic(s) after the finale"), so it does not disturb
   // the series spine above. Being the newest publishedAt, it is what
   // `?sort=publishedAt:desc` now surfaces first.
-  { file: '13-mad-max-fury-load.md', publishedAt: '2026-11-21T09:00:00.000Z' },
+  {
+    file: '13-mad-max-fury-load.md',
+    publishedAt: '2026-11-21T09:00:00.000Z',
+    replaces: [REVAMP_V1['13-mad-max-fury-load.md']],
+  },
   // A project write-up, not part of the belief/reality series: how adam-rs
   // was built. Part 2 will follow it.
   {

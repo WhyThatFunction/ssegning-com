@@ -126,6 +126,20 @@ Same shape, one layer up: `-j$(nproc)` is the correct setting for one build on o
 wrong for every agent after the first. Four agents each asking for 24 compile jobs is 96 jobs on
 24 threads — a machine that is busy doing almost nothing.
 
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Four agents, one build each: compile jobs against threads"
+    x-axis ["Threads on the machine", "Compile jobs requested (4 x 24)"]
+    y-axis "count" 0 --> 100
+    bar [24, 0]
+    bar [0, 96]
+```
+
 ---
 
 ## The model, drawn honestly: a bouncer, not a bigger room
@@ -134,7 +148,7 @@ The fix isn't tuning. It's **governance** — deliberately trading peak throughp
 completion. Six moving parts, and the first one does most of the work:
 
 ```mermaid
-flowchart LR
+flowchart TD
     Job["New heavy job"] --> Adm{"Admission:<br/>does it fit the budget?"}
     Adm -->|No| Q["Queue (FIFO).<br/>Wait. Don't retry."]
     Q --> Adm
@@ -227,5 +241,7 @@ the machine you can't see working is what keeps the rest of it fast.
 ticket, and let the convoy arrive intact.
 
 ---
+
+![A runaway job grew to 39 GiB on a 121 GiB desktop; the budget gives 48 GiB to heavy agent jobs and keeps about 19 GiB as headroom](/articles/mad-max-fury-load/budget-and-runaway.svg)
 
 *Part of the series · Back to the [index](README.md).*

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 380" width="840" height="380" role="img" aria-labelledby="title desc">
+  <title id="title">One gateway hop, six jobs</title>
+  <desc id="desc">One gateway hop does six jobs: identity, accounting, budget, providers, logging and observability. The gateway autoscales between 3 and 5 pods. Illustrative monthly budgets are 50 dollars for a free user and 200 dollars for a pro user.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .box { fill: none; stroke: #d8d5d1; }
+    .accent { fill: #b23a0a; }
+    .accent-stroke { stroke: #b23a0a; fill: none; }
+    .up { fill: #5e5d5b; fill-opacity: 0.35; stroke: #5e5d5b; }
+    .down { fill: none; stroke: #5e5d5b; stroke-dasharray: 4 4; }
+    .num { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 300; font-size: 64px; letter-spacing: -0.02em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .mono-s { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.06em; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .box { stroke: #3a3436; }
+      .accent { fill: #fb923c; }
+      .accent-stroke { stroke: #fb923c; }
+      .up { fill: #a8a29c; fill-opacity: 0.35; stroke: #a8a29c; }
+      .down { stroke: #a8a29c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="380"/>
+  <text class="mono muted" x="40" y="56">AI GATEWAY · ONE HOP</text>
+
+  <text class="num accent" x="40" y="150">6</text>
+  <text class="mono muted" x="42" y="180">JOBS ON ONE HOP</text>
+
+  <text class="num ink" x="300" y="150">3–5</text>
+  <text class="mono muted" x="302" y="180">GATEWAY PODS</text>
+
+  <text class="num ink" x="560" y="150">$50</text>
+  <text class="mono muted" x="562" y="180">FREE · MONTHLY BUDGET</text>
+
+  <line class="rule" x1="40" y1="216" x2="800" y2="216" stroke-width="1"/>
+  <text class="mono muted" x="40" y="252">THE SIX JOBS</text>
+
+  <g>
+    <rect class="box" x="40" y="272" width="120" height="48" rx="3"/>
+    <text class="mono-s ink" x="100" y="301" text-anchor="middle">IDENTITY</text>
+    <rect class="box" x="168" y="272" width="120" height="48" rx="3"/>
+    <text class="mono-s ink" x="228" y="301" text-anchor="middle">ACCOUNTING</text>
+    <rect class="accent-stroke" x="296" y="272" width="120" height="48" rx="3" stroke-width="1.5"/>
+    <text class="mono-s accent" x="356" y="301" text-anchor="middle">BUDGET</text>
+    <rect class="box" x="424" y="272" width="120" height="48" rx="3"/>
+    <text class="mono-s ink" x="484" y="301" text-anchor="middle">PROVIDERS</text>
+    <rect class="box" x="552" y="272" width="120" height="48" rx="3"/>
+    <text class="mono-s ink" x="612" y="301" text-anchor="middle">LOGGING</text>
+    <rect class="box" x="680" y="272" width="120" height="48" rx="3"/>
+    <text class="mono-s ink" x="740" y="301" text-anchor="middle">OBSERVABILITY</text>
+  </g>
+  <text class="mono muted" x="40" y="356">ILLUSTRATIVE LIMITS: $50 FREE, $200 PRO PER MONTH</text>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 300" width="840" height="300" role="img" aria-labelledby="title desc">
+  <title id="title">One release, two repos</title>
+  <desc id="desc">The app repo holds the release tag v2. The delivery repo still pins v1. The reconciler follows the pin, so production runs v1 and the release rolls back on its own.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .ctx { fill: #5e5d5b; fill-opacity: 0.35; }
+    .ctx2 { fill: #5e5d5b; fill-opacity: 0.2; }
+    .hot { fill: #b23a0a; }
+    .hotline { stroke: #b23a0a; }
+    .inkline { stroke: #0a0a0a; }
+    .box { fill: none; stroke: #5e5d5b; stroke-opacity: 0.6; }
+    .hotbox { fill: none; stroke: #b23a0a; }
+    .hotText { fill: #b23a0a; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .value { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .ctx { fill: #a8a29c; fill-opacity: 0.35; }
+      .ctx2 { fill: #a8a29c; fill-opacity: 0.2; }
+      .hot, .hotText { fill: #fb923c; }
+      .hotline { stroke: #fb923c; }
+      .inkline { stroke: #f2efea; }
+      .box { stroke: #a8a29c; }
+      .hotbox { stroke: #fb923c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="300"/>
+  <text class="mono muted" x="40" y="56">THE RECONCILER FOLLOWS THE PIN</text>
+  <rect class="box" x="40" y="84" width="230" height="96" rx="6"/>
+  <text class="mono muted" x="58" y="112">APP REPO</text>
+  <text class="label ink" x="58" y="148">release tag v2 exists</text>
+  <rect class="hotbox" x="305" y="84" width="230" height="96" rx="6" stroke-width="2"/>
+  <text class="mono muted" x="323" y="112">DELIVERY REPO</text>
+  <text class="label hotText" x="323" y="148">the pin says: deploy v1</text>
+  <rect class="box" x="570" y="84" width="230" height="96" rx="6"/>
+  <text class="mono muted" x="588" y="112">PRODUCTION</text>
+  <text class="label ink" x="588" y="148">runs v1</text>
+  <line class="hotline" x1="535" y1="132" x2="561" y2="132" stroke-width="2"/>
+  <path class="hotline" d="M555 126 L565 132 L555 138" fill="none" stroke-width="2"/>
+  <line class="rule" x1="40" y1="216" x2="800" y2="216" stroke-width="1"/>
+  <text class="label muted" x="40" y="252">You tagged v2 and forgot the pin. Self-heal drags production back to v1.</text>
+</svg>

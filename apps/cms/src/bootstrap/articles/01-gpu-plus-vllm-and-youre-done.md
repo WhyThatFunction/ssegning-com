@@ -7,6 +7,8 @@
 > how fast, and whether vLLM even works. "Which GPU" and "which model" turn out to be the
 > same question wearing two hats — and vLLM isn't always invited.
 
+![Same model, two cards, two loaders: a dense-70B model runs at about 60 to 100 tokens per second on Blackwell and about 20 to 30 on Volta; a 4-bit model runs at about 741 tokens per second with the proper kernel and about 93 with vLLM's GGUF loader.](/articles/gpu-plus-vllm-and-youre-done/same-model-two-speeds.svg)
+
 *Part of a little series for people watching AI eat everything and trying to tell the hype
 from the homework. This one is the homework nobody hands you before you swipe the card.*
 
@@ -119,6 +121,23 @@ So the "serious" managed rental is *worse at the flagship coding model* than two
 gamer's leftovers. Four gigabytes is the entire difference between "runs the good model" and
 "stuck with the toys." VRAM is a cliff, and the drop is steep.
 
+Here is the same story as a chart. GLM-4.7-Flash's weights take about 17 GB (the line); the 20 GB rental is the one that holds them and still can't run it.
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "VRAM per setup (GB) against GLM-4.7-Flash weights, about 17 GB"
+    x-axis ["A2000", "GEX44 rental", "2×4070", "5×V100"]
+    y-axis "GB of VRAM" 0 --> 90
+    bar [12, 0, 24, 80]
+    bar [0, 20, 0, 0]
+    line [17, 17, 17, 17]
+```
+
 ---
 
 ## Trap 3 — vLLM is a choice, not a law of physics
@@ -132,6 +151,20 @@ supported for now," there's no text-only class yet. And if your card is Ampere/V
 FP8), vLLM's fast lane is closed to you, so it falls back to a **slow GGUF loader** —
 measured at ~93 tokens/sec where the proper kernel does ~741. That's an ~8× tax for using
 the wrong loader for the format.
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Same 4-bit model, two loaders (tokens per second, measured)"
+    x-axis ["Proper kernel", "vLLM's GGUF loader"]
+    y-axis "Tokens per second" 0 --> 800
+    bar [741, 0]
+    bar [0, 93]
+```
 
 The alternative, **llama.cpp**, is built *around* that 4-bit GGUF format. On an owned card,
 for a small model, it gives comparable real-world speed (~52 tok/s measured), native API-key

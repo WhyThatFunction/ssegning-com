@@ -7,6 +7,8 @@
 > two systems quietly disagreeing about certificates, content types, and protocol framing.
 > Three services, three invisible mismatches, none fixable where you'd expect.
 
+![Three services failed for three different reasons: an empty SNI so the handshake dies, a valid ECDSA certificate rejected as BAD_ECC_CERT, and a JSON body labelled text/event-stream that yields 0 tools. A small proxy in front of each absorbs the mismatch.](/articles/just-point-it-at-the-url/three-mismatches.svg)
+
 *Part of a little series for people watching AI eat everything and wondering why the "simple"
 integrations keep catching fire. This one's a whodunit with three suspects and no obvious
 murder weapon.*

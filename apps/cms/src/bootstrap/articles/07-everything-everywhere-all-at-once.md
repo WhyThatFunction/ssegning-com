@@ -8,6 +8,8 @@
 > which of several providers answers, and ships a metered record of the whole thing to your
 > dashboards. One door, six jobs — and somehow it's the *cheap* part of the system.
 
+![One gateway hop does six jobs: identity, accounting, budget, providers, logging and observability. The gateway autoscales between 3 and 5 pods. Illustrative monthly budgets are $50 for a free user and $200 for a pro user.](/articles/everything-everywhere-all-at-once/six-jobs.svg)
+
 *Part of a little series for people watching AI eat everything and wondering what all this
 "AI gateway" talk actually buys them. Title borrowed, with respect, from a film about a
 woman doing far too many things at once. Relatable.*
@@ -42,7 +44,7 @@ sequenceDiagram
     participant U as User / CLI
     participant G as AI Gateway
     participant A as Auth check
-    participant R as Rate-limit (Redis)
+    participant R as Rate-limit<br/>(Redis)
     participant M as Model provider
     participant O as Dashboards
     U->>G: request + token
@@ -52,7 +54,7 @@ sequenceDiagram
     R-->>G: yes — proceed
     G->>M: route to the best provider
     M-->>G: answer (streaming)
-    G->>O: log who, what model, how many tokens, what it cost
+    G->>O: log who, model,<br/>tokens, cost
     G-->>U: answer
 ```
 
@@ -86,6 +88,22 @@ Two different limits, enforced from a shared Redis:
   1,000,000 tokens/min. Stops runaway loops.
 - **Budget limit** — per month, in dollars. Illustratively $50 (free) / $200 (pro). Stops your
   wallet.
+
+The two budgets, side by side:
+
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Monthly budget limit, illustrative (dollars)"
+    x-axis ["Free", "Pro"]
+    y-axis "dollars per month" 0 --> 250
+    bar [50, 0]
+    bar [0, 200]
+```
 
 Trip either one and you get a polite **429 "slow down."** Crucially, *the limit lives in front
 of the model* — you're stopped before you spend money, not billed after.
@@ -150,19 +168,14 @@ kitchen. The doorman is doing six jobs and barely breaking a sweat.
 ## The same picture, drawn honestly
 
 ```mermaid
-flowchart LR
-    U[User] --> G
-    subgraph G["One gateway hop (a few ms)"]
-      direction TB
-      J1[1. Verify identity]
-      J2[2. Price the request]
-      J3[3. Check budget → maybe 429]
-      J4[4. Pick the best provider]
-      J5[5. Meter + attribute]
-    end
-    G --> M["Model (seconds)"]
-    G --> O[Dashboards]
-    style G fill:#cfe8ff,stroke:#3b82f6
+flowchart TB
+    U[User] -->|"one gateway hop (a few ms)"| J1["1. Verify identity"]
+    J1 --> J2["2. Price the request"]
+    J2 --> J3["3. Check budget → maybe 429"]
+    J3 --> J4["4. Pick the best provider"]
+    J4 --> J5["5. Meter + attribute"]
+    J5 --> M["Model (seconds)"]
+    J5 --> O[Dashboards]
     style M fill:#fde68a,stroke:#f59e0b
 ```
 
