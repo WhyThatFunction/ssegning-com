@@ -10,7 +10,7 @@ const EXCERPT_MAX_LENGTH = 200;
 const META_DESCRIPTION_MAX_LENGTH = 155;
 
 /**
- * All 13 articles to publish, and the order to publish them in.
+ * Every bundled article to publish, and the order to publish them in.
  *
  * This is the author's own "Full interleaved calendar" from
  * `~/dev/articles/RELEASE.md` (week 1 -> 12: the 8-piece "Hold My GPU" series
@@ -46,6 +46,9 @@ const RELEASE_ORDER: ReadonlyArray<{ file: string; publishedAt: string }> = [
   // the series spine above. Being the newest publishedAt, it is what
   // `?sort=publishedAt:desc` now surfaces first.
   { file: '13-mad-max-fury-load.md', publishedAt: '2026-11-21T09:00:00.000Z' },
+  // A project write-up, not part of the belief/reality series: how adam-rs
+  // was built. Part 2 will follow it.
+  { file: '14-building-adam-rs-part-1.md', publishedAt: '2026-11-22T09:00:00.000Z' },
 ];
 
 interface ParsedArticle {
@@ -85,9 +88,28 @@ function truncate(text: string, maxLength: number): string {
 }
 
 /**
+ * The first plain paragraph after the H1: the excerpt for an article that
+ * opens with prose instead of the series' belief/reality blockquote.
+ */
+function firstParagraph(lines: string[], titleLineIndex: number): string[] {
+  const paragraph: string[] = [];
+  for (let i = titleLineIndex + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === '') {
+      if (paragraph.length > 0) break;
+      continue;
+    }
+    if (paragraph.length === 0 && /^(#|>|```|\||[-*+] |\d+\. |<)/.test(line)) return [];
+    paragraph.push(line);
+  }
+  return paragraph;
+}
+
+/**
  * Parses one bundled article's Markdown into the shape the `post` content
  * type expects: title/body split from the leading H1, an excerpt distilled
- * from the leading belief/reality blockquote, and a reading-time estimate.
+ * from the leading belief/reality blockquote (or the first paragraph when
+ * there is none), and a reading-time estimate.
  */
 function parseArticle(file: string, publishedAt: string): ParsedArticle {
   const raw = readFileSync(join(ARTICLES_DIR, file), 'utf-8');
@@ -119,7 +141,11 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
       break;
     }
   }
-  const excerptSource = flattenMarkdown(blockquoteLines.join('\n'));
+  const excerptSource = flattenMarkdown(
+    (blockquoteLines.length > 0 ? blockquoteLines : firstParagraph(lines, titleLineIndex)).join(
+      '\n',
+    ),
+  );
   const excerpt = truncate(excerptSource, EXCERPT_MAX_LENGTH);
 
   const wordCount = body.split(/\s+/).filter(Boolean).length;
@@ -136,7 +162,7 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
 }
 
 /**
- * Publishes the 13 bundled articles as `post` entries, on every
+ * Publishes the bundled articles as `post` entries, on every
  * boot. Creates a post only when no post with that slug exists yet — never
  * updates or overwrites one, so the author can freely edit a published post
  * in Strapi without a pod restart reverting it. Never throws: a failure here
