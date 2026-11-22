@@ -8,6 +8,8 @@
 > prompt, no warning. And "what I want" turns out to be pinned across two different repos, so a
 > half-finished release can roll *itself* back. Patch. Revert. Repeat.
 
+![The app repo holds release tag v2, the delivery repo still pins v1, and production runs v1](/articles/git-hog-day/two-repos-one-pin.svg)
+
 *Part of a little series for people watching AI eat everything and finding that the deployment
 system has started eating their hotfixes. Title is a pun on *Groundhog Day*, the Bill Murray
 one where he wakes up at the start of the same day, over and over, until he learns. You'll see why.*

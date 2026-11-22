@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 340" width="840" height="340" role="img" aria-labelledby="title desc">
+  <title id="title">One URL configures the whole team</title>
+  <desc id="desc">One URL and one command; four things happen automatically; seven specialist agents: web-search, doc-research, iac, reviewer, test, skill and frontend.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #e6e4e1; }
+    .card { fill: #b23a0a; fill-opacity: 0.12; }
+    .card2 { fill: #5e5d5b; fill-opacity: 0.12; }
+    .accent { fill: #b23a0a; }
+    .num { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 300; font-size: 68px; letter-spacing: -0.02em; }
+    .txt { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .tag { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.02em; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .card, .accent { fill: #fb923c; }
+      .card { fill-opacity: 0.16; }
+      .card2 { fill: #a8a29c; fill-opacity: 0.14; }
+    }
+  </style>
+  <rect class="bg" width="840" height="340"/>
+  <text class="mono muted" x="40" y="56">ONE ENDPOINT · THE WHOLE ORG</text>
+  <text class="num accent" x="40" y="160">1</text>
+  <text class="mono muted" x="42" y="190">URL</text>
+  <text class="num ink" x="230" y="160">1</text>
+  <text class="mono muted" x="232" y="190">COMMAND</text>
+  <text class="num ink" x="420" y="160">4</text>
+  <text class="mono muted" x="422" y="190">THINGS, AUTOMATIC</text>
+  <text class="num ink" x="610" y="160">7</text>
+  <text class="mono muted" x="612" y="190">SPECIALIST AGENTS</text>
+  <line class="rule" x1="40" y1="224" x2="800" y2="224" stroke-width="1"/>
+  <text class="mono muted" x="40" y="258">THE SEVEN, EACH IN ITS OWN CAGE</text>
+  <rect class="card2" x="40" y="274" width="104" height="36" rx="3"/>
+  <rect class="card2" x="149.3" y="274" width="104" height="36" rx="3"/>
+  <rect class="card2" x="258.7" y="274" width="104" height="36" rx="3"/>
+  <rect class="card2" x="368" y="274" width="104" height="36" rx="3"/>
+  <rect class="card2" x="477.3" y="274" width="104" height="36" rx="3"/>
+  <rect class="card2" x="586.7" y="274" width="104" height="36" rx="3"/>
+  <rect class="card2" x="696" y="274" width="104" height="36" rx="3"/>
+  <text class="tag ink" x="92" y="297" text-anchor="middle">web-search</text>
+  <text class="tag ink" x="201.3" y="297" text-anchor="middle">doc-research</text>
+  <text class="tag ink" x="310.7" y="297" text-anchor="middle">iac</text>
+  <text class="tag ink" x="420" y="297" text-anchor="middle">reviewer</text>
+  <text class="tag ink" x="529.3" y="297" text-anchor="middle">test</text>
+  <text class="tag ink" x="638.7" y="297" text-anchor="middle">skill</text>
+  <text class="tag ink" x="748" y="297" text-anchor="middle">frontend</text>
+</svg>

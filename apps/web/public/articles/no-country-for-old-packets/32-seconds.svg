@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 300" width="840" height="300" role="img" aria-labelledby="title desc">
+  <title id="title">The pod dies two seconds early</title>
+  <desc id="desc">A pod that cannot reach its destination hangs. A liveness probe kills it at 30 seconds. The real network error would have been logged at about 32 seconds.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .ctx { fill: #5e5d5b; fill-opacity: 0.35; }
+    .ctx2 { fill: #5e5d5b; fill-opacity: 0.2; }
+    .hot { fill: #b23a0a; }
+    .hotline { stroke: #b23a0a; }
+    .inkline { stroke: #0a0a0a; }
+    .box { fill: none; stroke: #5e5d5b; stroke-opacity: 0.6; }
+    .hotbox { fill: none; stroke: #b23a0a; }
+    .hotText { fill: #b23a0a; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .value { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .ctx { fill: #a8a29c; fill-opacity: 0.35; }
+      .ctx2 { fill: #a8a29c; fill-opacity: 0.2; }
+      .hot, .hotText { fill: #fb923c; }
+      .hotline { stroke: #fb923c; }
+      .inkline { stroke: #f2efea; }
+      .box { stroke: #a8a29c; }
+      .hotbox { stroke: #fb923c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="300"/>
+  <text class="mono muted" x="40" y="56">A BLOCKED CONNECTION, IN SECONDS</text>
+  <rect class="ctx" x="40" y="104" width="712.5" height="28" rx="3"/>
+  <rect class="hot" x="752.5" y="104" width="47.5" height="28" rx="3"/>
+  <text class="mono muted" x="40" y="160">0</text>
+  <text class="value ink" x="692.5" y="92" >30s</text>
+  <text class="value hotText" x="796.0" y="92">32s</text>
+  <line class="inkline" x1="752.5" y1="98" x2="752.5" y2="138" stroke-width="1"/>
+  <text class="label muted" x="40" y="196">The pod waits on packets that never answer.</text>
+  <text class="label ink" x="452.5" y="232">30s: the probe kills the pod. No error logged.</text>
+  <text class="label hotText" x="500.0" y="262">~32s: the real error would have been logged.</text>
+</svg>

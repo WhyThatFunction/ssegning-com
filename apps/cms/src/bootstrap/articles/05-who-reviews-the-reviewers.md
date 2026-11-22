@@ -9,6 +9,8 @@
 > deterministic checks, because a robot's opinion can be confidently, fluently, and occasionally
 > *maliciously* wrong.
 
+![Three lanes: gates are human-authored and mechanical, grounding is evidence the AI produces by running analyzers, judgment is the model's opinion that only advises](/articles/who-reviews-the-reviewers/three-lanes.svg)
+
 *Part of a little series for people watching AI eat everything and wondering whether they're
 about to be code-reviewed by a machine that hallucinates. Title with apologies to Alan Moore —
 "who watches the watchmen" was always the right question.*

@@ -9,6 +9,8 @@
 > then get killed, then look like a totally unrelated crash. Teams burn weeks chasing the wrong
 > ghost.
 
+![A blocked connection: the probe kills the pod at 30 seconds, two seconds before the real error would be logged at about 32](/articles/no-country-for-old-packets/32-seconds.svg)
+
 *Part of a little series for people watching AI eat everything and learning that the safest-
 sounding setting can quietly torch a platform. Title with a nod to the Coens — a quiet,
 relentless killer and a whole lot of packets with nowhere left to go.*
@@ -83,6 +85,20 @@ sequenceDiagram
     Note over P: ...and at ~32s, the REAL error<br/>would have been logged —<br/>but the pod's already dead.
 ```
 
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "Seconds until the pod dies, and until the real error would appear"
+    x-axis ["Probe kills the pod", "Real error would be logged"]
+    y-axis "seconds" 0 --> 36
+    bar [30, 0]
+    bar [0, 32]
+```
+
 The pod gets executed at second 30, **two seconds before** it would have logged the actual
 "network unreachable" error. So every restart shows you the same thing: a pod that starts, prints
 two boring setup lines, and dies — with no error. It looks *exactly* like a crash, or an
@@ -105,7 +121,7 @@ rule, timed perfectly to hide its own evidence. Teams chase that phantom for wee
 Stack up everything working against you and you see why this eats weeks:
 
 ```mermaid
-flowchart LR
+flowchart TB
     M[Missing allow-rule] --> H[Pod hangs, doesn't error]
     H --> K[Probe kills it before it logs why]
     K --> L["Looks like a crash, not a network issue"]
