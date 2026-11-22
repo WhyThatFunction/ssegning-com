@@ -3,17 +3,14 @@ import Link from 'next/link';
 import { BrandLockup } from '@/components/brand-lockup';
 import { Container } from '@/components/container';
 import { SocialLinks } from '@/components/social-links';
+import { SITE_PAGES } from '@/lib/site-pages';
 import type { SiteSetting } from '@/lib/types';
 
-// Hard-coded (not CMS-driven, unlike the header's siteSetting.navLinks) —
-// /branding is a reference page, not a top-level destination, so it lives
-// here rather than in the primary nav.
-const moreLinks = [
-  { href: '/branding', label: 'Branding' },
-  { href: '/legal/imprint', label: 'Imprint' },
-  { href: '/legal/privacy', label: 'Privacy' },
-  { href: '/legal/terms', label: 'Terms' },
-];
+// The reference and legal pages, from the shared page list (lib/site-pages.ts,
+// `inFooter`). Not CMS-driven, unlike the header's siteSetting.navLinks: these
+// are reference pages, not top-level destinations, so they live here rather
+// than in the primary nav.
+const moreLinks = SITE_PAGES.filter((page) => page.inFooter);
 
 function ColumnTitle({ children }: { children: string }) {
   return (
@@ -81,8 +78,8 @@ export function SiteFooter({ siteSetting }: { siteSetting: SiteSetting }) {
             <ColumnTitle>More</ColumnTitle>
             <ul className="flex flex-col gap-2.5">
               {moreLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className={linkClass}>
+                <li key={link.path}>
+                  <Link href={link.path} className={linkClass}>
                     {link.label}
                   </Link>
                 </li>
