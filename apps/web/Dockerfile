@@ -47,15 +47,12 @@ COPY . .
 
 # The CMS this build reads its content from.
 #
-# WHY THIS EXISTS: every page in apps/web is ISR, and every one of them falls
-# back to hand-written copy in src/content/fallback when Strapi is
-# unreachable. The build runs in CI, where the runtime STRAPI_URL
-# (http://ssegning-cms:1337) does not resolve — so every prerendered page in
-# the image was a render of the FALLBACK content, not of the site. Next then
-# serves that baked render to the first visitor after each revalidation
-# window, which on a low-traffic site is a large share of them: the Work page
-# shipped linking three case studies that exist nowhere in the CMS, while the
-# sitemap listed the three real ones.
+# WHY THIS EXISTS: every page in apps/web is ISR and is prerendered here. The
+# build runs in CI, where the runtime STRAPI_URL (http://ssegning-cms:1337)
+# does not resolve. Back when pages fell back to hand-written copy, every
+# prerendered page in the image was a render of that copy, not of the site,
+# and Next served it to the first visitor after each revalidation window: the
+# Work page shipped linking three case studies that exist nowhere in the CMS.
 #
 # Pointing the build at the public CMS makes the image contain the real site.
 # If the CMS is unreachable from the runner the build fails: every page reads
