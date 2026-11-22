@@ -55,6 +55,8 @@ interface ParsedArticle {
   slug: string;
   title: string;
   body: string;
+  /** Everything below the H1, the only part the excerpt is read from. */
+  lead: string;
   readingMinutes: number;
   publishedAt: string;
 }
@@ -76,6 +78,7 @@ function truncate(text: string, maxLength: number): string {
 interface DocNode {
   type: string;
   text?: string;
+  marks?: { type: string }[];
   content?: DocNode[];
 }
 
@@ -88,20 +91,49 @@ function textOf(node: DocNode): string {
   return (node.content ?? []).map(textOf).join(node.type === 'paragraph' ? '' : ' ');
 }
 
+/** Whitespace collapsed to single spaces, trimmed. */
+function clean(text: string): string {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
 /**
- * The excerpt: the article's first prose block. For the series that is the
- * leading belief/reality blockquote; for an article that opens with prose, its
- * first paragraph. Read from the parsed document rather than from Markdown
- * lines, so lists, tables, code, images and link URLs can never leak into it.
- * An article with no prose at all gives an empty excerpt.
+ * A paragraph that is only emphasis, such as `*Part 1 of 2*` or `**Contents**`:
+ * a label above the prose, not the prose itself.
+ */
+function isLabel(node: DocNode): boolean {
+  const texts = (node.content ?? []).filter((child) => child.type === 'text');
+  return (
+    texts.length > 0 &&
+    texts.every((child) =>
+      (child.marks ?? []).some((mark) => mark.type === 'bold' || mark.type === 'italic'),
+    )
+  );
+}
+
+/**
+ * The excerpt, from the document converted from everything below the H1.
+ *
+ * A blockquote that leads the article, with nothing but labels before it,
+ * wins: that is the series' belief/reality pair. Otherwise it is the first
+ * paragraph that is not just an emphasised label. Reading the parsed document rather than
+ * Markdown lines keeps list markers, table rows, code and link URLs out of a
+ * paragraph; a blockquote contributes all of its text, including any list or
+ * code inside it. An article with no prose gives an empty excerpt.
  */
 function excerptFromDoc(doc: DocNode): string {
-  for (const node of doc.content ?? []) {
-    if (node.type !== 'blockquote' && node.type !== 'paragraph') continue;
-    const text = textOf(node).replace(/\s+/g, ' ').trim();
-    if (text) return truncate(text, EXCERPT_MAX_LENGTH);
-  }
-  return '';
+  const nodes = doc.content ?? [];
+  const isProse = (node: DocNode) =>
+    (node.type === 'blockquote' || node.type === 'paragraph') &&
+    clean(textOf(node)) !== '' &&
+    !(node.type === 'paragraph' && isLabel(node));
+
+  const first = nodes.find((node) => node.type === 'heading' || isProse(node));
+  if (first?.type === 'blockquote') return truncate(clean(textOf(first)), EXCERPT_MAX_LENGTH);
+
+  const paragraph = nodes.find(
+    (node) => node.type === 'paragraph' && clean(textOf(node)) && !isLabel(node),
+  );
+  return paragraph ? truncate(clean(textOf(paragraph)), EXCERPT_MAX_LENGTH) : '';
 }
 
 /**
@@ -134,6 +166,7 @@ function parseArticle(file: string, publishedAt: string): ParsedArticle {
     slug: slugFromFilename(file),
     title,
     body,
+    lead: lines.slice(titleLineIndex + 1).join('\n'),
     readingMinutes,
     publishedAt,
   };
@@ -167,7 +200,9 @@ export async function publishBundledArticles(strapi: Core.Strapi): Promise<void>
       // from the converted document, where the parser has already told prose
       // apart from lists, tables, code and link URLs.
       const body = await markdownToTiptapJson(article.body);
-      const excerpt = excerptFromDoc(JSON.parse(body) as DocNode);
+      const excerpt = excerptFromDoc(
+        JSON.parse(await markdownToTiptapJson(article.lead)) as DocNode,
+      );
       const createdPost = await strapi.documents('api::post.post').create({
         status: 'published',
         data: {
