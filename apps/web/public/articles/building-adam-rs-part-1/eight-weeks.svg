@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 400" width="840" height="400" role="img" aria-labelledby="title desc">
+  <title id="title">adam-rs in eight weeks</title>
+  <desc id="desc">8 weeks, 34 crates, 504 commits and 60 decision records between 28 September and 21 November 2026. Commits by period: 77 from 28 to 30 September, 158 in October, 269 from 1 to 21 November.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #e6e4e1; }
+    .seg1 { fill: #b23a0a; fill-opacity: 0.3; }
+    .seg2 { fill: #b23a0a; fill-opacity: 0.6; }
+    .seg3 { fill: #b23a0a; }
+    .accent { fill: #b23a0a; }
+    .num { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 300; font-size: 68px; letter-spacing: -0.02em; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .seg1, .seg2, .seg3, .accent { fill: #fb923c; }
+    }
+  </style>
+
+  <rect class="bg" width="840" height="400"/>
+
+  <text class="mono muted" x="40" y="56">ADAM-RS · 28 SEP → 21 NOV 2026</text>
+
+  <g>
+    <text class="num accent" x="40" y="160">8</text>
+    <text class="mono muted" x="42" y="190">WEEKS</text>
+
+    <text class="num ink" x="230" y="160">34</text>
+    <text class="mono muted" x="232" y="190">CRATES</text>
+
+    <text class="num ink" x="420" y="160">504</text>
+    <text class="mono muted" x="422" y="190">COMMITS</text>
+
+    <text class="num ink" x="610" y="160">60</text>
+    <text class="mono muted" x="612" y="190">DECISION RECORDS</text>
+  </g>
+
+  <line class="rule" x1="40" y1="232" x2="800" y2="232" stroke-width="1"/>
+
+  <text class="mono muted" x="40" y="270">COMMITS BY PERIOD</text>
+
+  <!-- 77 + 158 + 269 = 504, scaled to 760px -->
+  <rect class="seg1" x="40" y="288" width="116.1" height="28" rx="3"/>
+  <rect class="seg2" x="158.1" y="288" width="236.3" height="28" rx="3"/>
+  <rect class="seg3" x="396.4" y="288" width="403.6" height="28" rx="3"/>
+
+  <text class="mono ink" x="40" y="344">77</text>
+  <text class="mono muted" x="40" y="362">28–30 SEP</text>
+  <text class="mono ink" x="158" y="344">158</text>
+  <text class="mono muted" x="158" y="362">OCTOBER</text>
+  <text class="mono ink" x="396" y="344">269</text>
+  <text class="mono muted" x="396" y="362">1–21 NOV</text>
+</svg>

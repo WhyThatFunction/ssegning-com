@@ -2,6 +2,8 @@
 
 In eight weeks, adam-rs went from an empty repository to a Rust framework for durable AI agents: 34 crates, 504 commits and 60 decision records, between 28 September and 21 November 2026.
 
+![adam-rs in eight weeks: 8 weeks, 34 crates, 504 commits and 60 decision records. Commits by period: 77 from 28 to 30 September, 158 in October, 269 from 1 to 21 November.](/articles/building-adam-rs-part-1/eight-weeks.svg)
+
 adam-rs answers one question: what does an AI agent need so it can run for hours, survive a crash, and be trusted with real work? Its answer is a durable agent loop over a run store, agents written as folders of Markdown and Rust functions, and an A2A server in front, so any client can talk to them. Two agents ship with it: **adam-coder**, which takes a coding task to a verified pull request, and **adam-agent**, which serves any agent folder.
 
 This first article tells how it was built, decision by decision. A second article will cover what comes next.
@@ -18,6 +20,23 @@ Three ideas from those first days still carry the framework:
 - **A run is journaled.** Each step of an agent run is written to the store before it counts. A worker that crashes leaves a run that another worker picks up from its last committed step, and a step is never paid for twice.
 - **Work is leased.** A worker holds a lease on the run it is executing. When the lease expires, the run is free for another worker. A notification may wake a worker sooner, but the store decides; a signal is never the truth.
 
+```mermaid
+sequenceDiagram
+    participant A as Worker A
+    participant S as Run store
+    participant B as Worker B
+    A->>S: take the lease on a run
+    A->>S: journal step 1
+    A->>S: journal step 2
+    Note over A: crashes during step 3
+    Note over S: the lease expires
+    S--)B: notification (a hint, not the truth)
+    B->>S: take the lease
+    S-->>B: head and transcript, last committed step 2
+    B->>S: journal step 3
+    Note over B,S: no committed step runs or is paid for twice
+```
+
 On 19 November, ADR 0055 refined the journal: a run's state is a small head plus an append-only transcript. A run that lasts hours stays cheap to resume.
 
 ## An agent is a folder
@@ -25,6 +44,13 @@ On 19 November, ADR 0055 refined the journal: a run's state is a small head plus
 On 1 October, ADRs 0004 and 0005 decided how agents are written. An agent is a **folder**: its instructions in Markdown, its card, its skills, its commands, its sub-agents and the MCP servers it may use. One binary, `adam-agent`, serves any such folder, read at start. Writing an agent needs no Rust and no build.
 
 When an agent needs code of its own, a Rust function becomes a tool with one attribute, `#[tool]`. Its arguments become the tool's schema, checked at compile time.
+
+```mermaid
+flowchart LR
+    F["an agent folder: instructions in Markdown, card, skills, commands, sub-agents, the MCP servers it may use"] -->|"read at start"| AG["adam-agent: one binary"]
+    T["Rust functions with #[tool]"] -.->|"when it needs code"| AG
+    AG --> A2A["an A2A server"]
+```
 
 The coder came next. On 6 October, ADR 0021 settled what it is: **adam is a general agent that can code**, not a separate kind of agent. On 11 October, two decisions followed:
 
@@ -46,6 +72,20 @@ Every adam agent is an A2A 1.0 server. A client that speaks plain A2A can send i
 
 The rule for all of them comes from ADR 0006: an extension is optional. A client that ignores it still gets a correct A2A answer.
 
+```mermaid
+sequenceDiagram
+    participant P as Plain A2A client
+    participant G as adam agent
+    participant X as Client with extensions
+    P->>G: task
+    G-->>P: a correct A2A answer
+    X->>G: task, activating steps, steer and usage
+    G-->>X: a tree of steps, text streamed as written
+    X->>G: steer message
+    Note over G: read at the task's next step
+    G-->>X: tokens of every model call
+```
+
 A2UI had the most dramatic change. On 19 November, ADR 0056 chose a **hard cutover** to A2UI v1.0: no dual support, old surfaces shown read-only as made by an earlier version. The cutover was finished across every repository two days later.
 
 ## Running code safely for many people
@@ -57,6 +97,19 @@ A coder runs commands, and commands are the dangerous part. Five decisions built
 3. **Run pods reach the internet only through an egress proxy** (ADR 0042, 27 October), with an allow-list the deployment owns. The network is closed by default.
 4. **The coder's own git runs where no secret is readable.** A git sandbox beside the coder runs every git command, so a repository's hooks or filters can never read a token.
 5. **No Podman** (ADR 0052, 19 November). A repository's own environment is a run pod made from its image, not a container started inside another one.
+
+```mermaid
+flowchart TB
+    subgraph CODER["the coder"]
+        direction LR
+        AG["agent: decides"]
+        GS["git sandbox: runs every git command, no secret readable"]
+    end
+    AG -->|"commands"| RP["run pod: sees only its own run"]
+    RP -.-x|"closed"| OTHER["other runs, other people's files"]
+    RP -->|"the only way out"| EP["egress proxy"]
+    EP -->|"allow-list owned by the deployment"| NET(("internet"))
+```
 
 The Kubernetes operator that runs all of this started inside adam-rs (ADR 0029). On 14 November it moved to the platform repository (ADR 0046), and adam-rs went back to being a library and its two agents.
 
@@ -70,6 +123,21 @@ Until mid-November, adam ran as a server. On 16 November, ADR 0047 decided that 
 - **A `SecretSource` that refuses every name by default.** The application decides what the agent may read.
 - **One SQLite store** (ADR 0053). A run lives in a file on the device, and only one process may hold that file.
 - **Kill and resume.** A process killed in the middle of a run is replaced by the next one, which finishes the run without repeating a committed step.
+
+```mermaid
+flowchart TB
+    subgraph SRV["as a server"]
+        direction LR
+        CL["any A2A client"] --> CP["control plane"] --> W["workers"] --> ST[("Postgres or MongoDB")]
+    end
+    subgraph EMB["embedded in an application (ADR 0047)"]
+        direction LR
+        APP["the application"] --> EN["adam-engine: no server, no HTTP client, no database driver"]
+        EN --> SQ[("one SQLite file on the device")]
+        EN --> SEC["SecretSource: refuses every name by default"]
+    end
+    SRV ~~~ EMB
+```
 
 The durable primitives came with it, all built the same week:
 
@@ -92,6 +160,20 @@ The first pilot ran on 20 and 21 November: 5 tasks, 4 variants, 2 reasoning leve
 | Cost per run, relative | about 4× | 1× |
 | Time per run at `low` reasoning | about 12 min | about 3 min |
 
+```mermaid
+---
+config:
+  xyChart:
+    height: 340
+---
+xychart-beta
+    title "adam compared with OpenCode (OpenCode = 1)"
+    x-axis ["Review score", "Request size", "Cost per run", "Time per run"]
+    y-axis "times OpenCode" 0 --> 4.5
+    bar [1.3, 3.8, 4, 4]
+    line [1, 1, 1, 1]
+```
+
 Three findings shaped the next work:
 
 - **adam writes the better change.** The gap is mostly tests: adam adds them, OpenCode mostly does not.
@@ -102,7 +184,30 @@ The pilot also showed that the highest reasoning level was not worth it: it cost
 
 ## How it was built
 
-adam-rs was built at a pace a small team rarely sustains: 77 commits in its first three days of September, 158 in October, 269 in the first three weeks of November. Four habits kept that pace from turning into chaos.
+adam-rs was built at a pace a small team rarely sustains: 77 commits in its first three days, at the end of September, 158 in October, 269 in the first three weeks of November. Four habits kept that pace from turning into chaos.
+
+```mermaid
+flowchart LR
+    subgraph SEP["September"]
+        direction TB
+        S1["28 Sep: Store trait, conformance suite, Postgres and MongoDB"] --> S2["29 Sep · ADR 0001: a library, not an application"]
+    end
+    subgraph OCT["October"]
+        direction TB
+        O1["1 Oct · ADRs 0004, 0005: an agent is a folder"] --> O2["5 Oct · ADR 0019: commands run in a pod of their own"]
+        O2 --> O3["6 Oct · ADR 0021: a general agent that can code"]
+        O3 --> O4["11 Oct · ADRs 0038, 0039: own tools, OpenCode's loop"]
+        O4 --> O5["27 Oct · ADR 0042: egress proxy"]
+    end
+    subgraph NOV["November"]
+        direction TB
+        N1["14 Nov · ADR 0046: the operator moves out"] --> N2["16 Nov · ADR 0047: adam embedded in an app"]
+        N2 --> N3["17 Nov · ADR 0048: benchmark harness"]
+        N3 --> N4["19 Nov · ADRs 0052, 0055, 0056"]
+        N4 --> N5["20 to 21 Nov: first benchmark pilot"]
+    end
+    SEP --> OCT --> NOV
+```
 
 The decisions bunch up at the end: 18 of the 60 records date from the last week alone, from 16 to 21 November.
 
@@ -123,5 +228,7 @@ The decisions of the last days point to what comes next:
 - **Reasoning per model** (ADRs 0063 and 0064). No global default: each model declares the levels it takes, its wire format and its output cap, measured model by model.
 - **Resource governance.** An agent on a person's own computer gets budgets for cores, memory and disk, and waits instead of failing when a budget is full.
 - **adam in an application on four platforms.** The same agent behind one app on Android, iOS, desktop and the web, on networks that drop and reconnect.
+
+![Tokens in a first request, ADR 0066: a "Hi" costs about 22 000 tokens today; the goal is under 5 000 for a chat agent and under 8 000 for the coder.](/articles/building-adam-rs-part-1/first-request.svg)
 
 Part 2 will tell how those land, and what the second benchmark says.
