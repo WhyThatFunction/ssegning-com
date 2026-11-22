@@ -94,12 +94,12 @@ spec:
               value: {{ .Values.cms.env.s3Bucket | quote }}
             - name: S3_PUBLIC_BASE
               value: {{ .Values.cms.env.s3PublicBase | quote }}
-            # web's Service + port, not a magic string — see values.yaml
-            # web.serviceName/web.port.
             # The public site's origin, for the <loc> entries of the content
             # sitemap (apps/cms/src/api/sitemap). Same value the web app uses.
             - name: SITE_URL
               value: {{ .Values.web.env.nextPublicSiteUrl | quote }}
+            # web's Service + port, not a magic string — see values.yaml
+            # web.serviceName/web.port.
             - name: WEB_REVALIDATE_URL
               value: {{ printf "http://%s:%v/api/revalidate" .Values.web.serviceName .Values.web.port | quote }}
             - name: SMTP_HOST

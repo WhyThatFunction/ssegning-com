@@ -66,10 +66,17 @@ function bodyImages(body: string | null | undefined): string[] {
   return sources;
 }
 
-/** Makes a URL absolute: article images are site paths, uploads may be CMS paths. */
+/**
+ * Makes a URL absolute (article images are site paths, uploads may be CMS
+ * paths) and keeps only http(s): the page's sanitizer drops any other scheme,
+ * so a `javascript:` or `data:` source is never an image the site shows.
+ */
 function absolute(url: string, base: string): string | null {
   try {
-    return new URL(url, base).toString();
+    const resolved = new URL(url, base);
+    return resolved.protocol === 'https:' || resolved.protocol === 'http:'
+      ? resolved.toString()
+      : null;
   } catch {
     return null;
   }
