@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og';
 
-import { siteSetting as fallbackSiteSetting } from '@/content/fallback';
 import { getSiteSetting } from '@/lib/strapi';
 
 export const alt = 'Stephane Segning Lambou — Software & Platform Engineering';
@@ -16,7 +15,7 @@ const MARK_PATH =
   'M32 18H46A14 14 0 0 1 58 32V46A14 14 0 0 1 46 58H32A14 14 0 0 1 18 46V32A14 14 0 0 1 32 18Z';
 
 export default async function Image() {
-  const siteSetting = (await getSiteSetting()) ?? fallbackSiteSetting;
+  const siteSetting = await getSiteSetting();
 
   return new ImageResponse(
     <div

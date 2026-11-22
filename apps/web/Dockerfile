@@ -58,11 +58,10 @@ COPY . .
 # sitemap listed the three real ones.
 #
 # Pointing the build at the public CMS makes the image contain the real site.
-# If the CMS is unreachable from the runner the article and project pages
-# cannot be prerendered and the build fails: the slug pages throw rather than
-# bake a 404 or fallback copy for a real URL (see CmsUnavailableError). If the
-# article list itself cannot be fetched there is nothing to prerender and the
-# build succeeds, rendering those pages on first request.
+# If the CMS is unreachable from the runner the build fails: every page reads
+# the CMS and throws CmsUnavailableError rather than bake placeholder copy
+# into the image. The prerendered pages in the image are also what each new
+# pod serves while the CMS restarts alongside it on a deploy.
 ARG STRAPI_URL
 ENV STRAPI_URL=$STRAPI_URL
 # Commit SHA, read by next.config.ts to version the service worker per deploy.

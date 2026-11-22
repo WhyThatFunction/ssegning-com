@@ -5,15 +5,15 @@ import { Container } from '@/components/container';
 import { Markdown } from '@/components/markdown';
 import { MetricStrip } from '@/components/metric-strip';
 import { Section } from '@/components/section';
-import { aboutPage as fallbackAboutPage } from '@/content/fallback';
 import { mediaAlt, resolveMediaUrl } from '@/lib/media';
 import { getAboutPage } from '@/lib/strapi';
 
-// Explicit ISR: the Strapi fetch helpers (src/lib/strapi.ts) swallow every fetch error into null/[], so Next never sees a completed fetch here to infer revalidation from on its own.
+// ISR: regenerate at most once a minute. A regeneration that throws (the CMS
+// did not answer, see CmsUnavailableError) keeps the last good copy.
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const about = (await getAboutPage()) ?? fallbackAboutPage;
+  const about = await getAboutPage();
   return {
     title: 'About',
     description: about.seo?.metaDescription ?? `${about.name}, ${about.role ?? 'consultant'}.`,
@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AboutPage() {
-  const page = (await getAboutPage()) ?? fallbackAboutPage;
+  const page = await getAboutPage();
   const portraitUrl = resolveMediaUrl(page.portrait);
 
   return (

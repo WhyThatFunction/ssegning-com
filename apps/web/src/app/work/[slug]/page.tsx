@@ -34,14 +34,15 @@ async function resolveProject(slug: string): Promise<Project | null> {
   throw new CmsUnavailableError(`project "${slug}"`);
 }
 
-// Explicit ISR: the Strapi fetch helpers (src/lib/strapi.ts) swallow every fetch error into null/[], so Next never sees a completed fetch here to infer revalidation from on its own.
+// ISR: regenerate at most once a minute. A regeneration that throws (the CMS
+// did not answer, see CmsUnavailableError) keeps the last good copy.
 export const revalidate = 60;
-// Explicit so a slug missing from generateStaticParams (Strapi unreachable at build time) still renders on demand instead of 404ing.
+// Explicit so a slug published after the build still renders on demand instead of 404ing.
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
-  // Real records only. Prerendering the fallback slugs would bake a 200 page
-  // for a project the CMS does not have.
+  // Prerenders every project the CMS lists. If the list cannot be fetched the
+  // build fails (CmsUnavailableError) rather than shipping an image with none.
   // `dynamicParams` is true (below), so anything not listed here still renders
   // on demand; an unknown slug reaches `resolveProject` and 404s there.
   const projects = await getProjects();

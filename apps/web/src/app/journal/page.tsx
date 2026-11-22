@@ -5,7 +5,6 @@ import { PostRow } from '@/components/post-row';
 import { Section } from '@/components/section';
 import { SectionHeading } from '@/components/section-heading';
 import { StatusLine } from '@/components/status-line';
-import { posts as fallbackPosts } from '@/content/fallback';
 import { getPosts } from '@/lib/strapi';
 import type { Post } from '@/lib/types';
 
@@ -14,12 +13,13 @@ export const metadata: Metadata = {
   description: 'Notes on Kubernetes, Rust, TypeScript, and running production infrastructure.',
 };
 
-// Explicit ISR: the Strapi fetch helpers (src/lib/strapi.ts) swallow every fetch error into null/[], so Next never sees a completed fetch here to infer revalidation from on its own.
+// ISR: regenerate at most once a minute. A regeneration that throws (the CMS
+// did not answer, see CmsUnavailableError) keeps the last good copy.
 export const revalidate = 60;
 
 export default async function JournalPage() {
   const posts = await getPosts();
-  const list = posts.length > 0 ? posts : fallbackPosts;
+  const list = posts;
   const [featured, ...rest] = list;
 
   return (

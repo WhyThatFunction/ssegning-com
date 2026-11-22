@@ -2,7 +2,7 @@ import type { MetricComponent } from '@/lib/types';
 
 // Literal class strings (not built dynamically) so Tailwind's scanner can
 // see and generate every one of them. The CMS-authored metric count varies
-// (home page seed ships 4, the fallback and about-page highlights ship 3),
+// (the home page seed ships 4, the about-page highlights 3),
 // so the column count adapts instead of leaving a lonely 4th item wrapping
 // under a fixed 3-column grid.
 const GRID_CLASS_BY_COUNT: Record<number, string> = {

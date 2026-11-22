@@ -85,12 +85,13 @@ pnpm --filter @ssegning/cms develop
 pnpm --filter @ssegning/web dev
 ```
 
-`apps/web` renders fully with the CMS down or unreachable — every Strapi
-fetch in `apps/web/src/lib/strapi.ts` fails soft to `null`/`[]`, and pages
-fall back to the hand-written copy in `apps/web/src/content/fallback.ts`.
-This is deliberate: a cold cluster, a CMS restart, or a plain `STRAPI_URL`-
-less dev box must never show a 500 — you can develop and preview the whole
-site with no CMS running at all.
+`apps/web` needs a CMS to render: there is no hand-written fallback copy.
+Point `STRAPI_URL` at a local Strapi, or at the public read API
+(`https://cms.ssegning.com`) to work on the site without running one. When
+Strapi stops answering in production, each page keeps serving its last good
+copy: a regeneration that cannot reach the CMS throws `CmsUnavailableError`
+(`apps/web/src/lib/strapi.ts`), and Next.js only replaces a cached page when
+a render succeeds.
 
 ## Content model
 
@@ -141,7 +142,7 @@ longer holds, fix this table, don't just work around it.
 | Gotcha | Why it matters |
 |---|---|
 | The four `GISCUS_*` vars are deliberately **not** `NEXT_PUBLIC_*`. | `NEXT_PUBLIC_*` is inlined at **build** time, and the Docker image is built in CI with no giscus config — a `NEXT_PUBLIC_GISCUS_*` would bake in as `undefined` forever. `apps/web/src/app/journal/[slug]/page.tsx` (a Server Component) reads `process.env.GISCUS_*` at **request** time and passes the values as props into `apps/web/src/components/comments.tsx`, so a Deployment env change takes effect on the next pod restart with no rebuild. Renaming these back to `NEXT_PUBLIC_*` silently disables comments forever. |
-| Every content route carries an explicit `export const revalidate = 60`. | The Strapi fetch helpers in `apps/web/src/lib/strapi.ts` fail soft (return `null`/`[]`), so a build performed with Strapi unreachable — which is every Docker build, since CI has no Strapi to talk to — records nothing revalidatable. Without the route-level `revalidate` export, Next has no other signal and bakes the route as **permanently static**, serving fallback copy forever even once the CMS is reachable in production. |
+| Every content route carries an explicit `export const revalidate = 60`. | It states the regeneration window on the route itself rather than leaving Next to infer it from the `fetch` options in `apps/web/src/lib/strapi.ts`. A new page that reads `strapi.ts` needs it too. |
 | `strapi build` only transpiles `src/**/*.ts`. | It does not copy the bundled article Markdown under `src/bootstrap/articles/`, which `articles.ts` reads via `readFileSync` at runtime. `apps/cms/scripts/copy-bootstrap-assets.js` copies that directory into `dist/` after every build; skip it and the CMS `ENOENT`s reading a bundled article at boot. |
 | Strapi 5's Document Service overrides `publishedAt` on `create()`. | It always stamps "now", ignoring any `publishedAt` passed in — so `articles.ts` backdates each post's release date via a follow-up `strapi.db.query('api::post.post').update(...)` (the low-level query layer, which has no such override) to reproduce the intended one-week-apart release order under `GET /api/posts?sort=publishedAt:desc`. |
 | `apps/web/public` must contain a tracked file. | An empty, untracked `public/` directory passes a local build (pnpm/git don't care) but fails every CI build from a clean clone, since Docker's build context only sees what git tracks. `.gitkeep` + a `README.md` are committed there for exactly this reason — don't let both get deleted. |
