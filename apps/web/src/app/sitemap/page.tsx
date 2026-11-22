@@ -26,8 +26,9 @@ export const revalidate = 60;
  * (Browsers no longer style XML with XSLT -- Chrome dropped it in November
  * 2026 -- so a stylesheet on the XML files would show most readers nothing.)
  *
- * Built from the site's own pieces: the journal's ruled rows for articles and
- * case studies, and the footer's link columns for the hand-built pages.
+ * Built from the site's own pieces: the journal's rows (PostRow) for articles,
+ * the same row layout for case studies, and the journal's small uppercase
+ * labels over each group.
  */
 export default async function SitemapPage() {
   const [posts, projects] = await Promise.all([getPosts(), getProjects()]);
@@ -49,7 +50,9 @@ export default async function SitemapPage() {
                 className="group -mx-4 flex items-baseline justify-between gap-4 rounded-input px-4 py-2.5 transition-colors duration-150 ease-out hover:bg-surface-1"
               >
                 <span className="text-base text-ink group-hover:text-accent">{page.label}</span>
-                <span className="font-mono text-xs text-ink-muted">{page.path}</span>
+                <span aria-hidden="true" className="font-mono text-xs text-ink-muted">
+                  {page.path}
+                </span>
               </Link>
             </li>
           ))}
