@@ -161,6 +161,12 @@ const RELEASE_ORDER: ReadonlyArray<Release> = [
     file: '15-the-bot-who-asked-too-much.md',
     publishedAt: '2026-11-22T14:00:00.000Z',
   },
+  // adam-rs write-up, part 2: the second benchmark and a sceptical reading of
+  // it. Follows part 1 (14-building-adam-rs-part-1.md).
+  {
+    file: '16-building-adam-rs-part-2.md',
+    publishedAt: '2026-11-22T17:30:00.000Z',
+  },
 ];
 
 interface ParsedArticle {

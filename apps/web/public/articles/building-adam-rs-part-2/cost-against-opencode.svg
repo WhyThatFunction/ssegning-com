@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 422" width="840" height="422" role="img" aria-labelledby="title desc">
+  <title id="title">Cost per task against OpenCode, paired on the same tasks</title>
+  <desc id="desc">Geometric mean of the per-task cost ratio on tasks both agents finished, with 95% bootstrap intervals, log scale. DeepSeek V4.1: adam ÷ OpenCode 4.49 times (2.74 to 7.92, 7 tasks), highlighted; adam-lean ÷ OpenCode 2.72 times (1.93 to 4.01, 9 tasks). MiniMax M3: adam ÷ OpenCode 0.96 times (0.23 to 2.89, 3 tasks); adam-lean ÷ OpenCode 0.55 times (0.33 to 0.77, 4 tasks). Gemini 3.1 Flash-Lite: adam ÷ OpenCode 2.75 times (1.74 to 4.82, 10 tasks); adam-lean ÷ OpenCode 2.16 times (1.48 to 3.16, 10 tasks). An interval that crosses 1 is no evidence of a difference.</desc>
+  <style>
+    .bg { fill: #f8f3f0; }
+    .ink { fill: #0a0a0a; }
+    .muted { fill: #5e5d5b; }
+    .rule { stroke: #d8d5d1; }
+    .ctx { stroke: #5e5d5b; fill: #5e5d5b; }
+    .hi { stroke: #b23a0a; fill: #b23a0a; }
+    .ring { fill: #f8f3f0; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
+    .label { font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 15px; }
+    .value { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1b1818; }
+      .ring { fill: #1b1818; }
+      .ink { fill: #f2efea; }
+      .muted { fill: #a8a29c; }
+      .rule { stroke: #3a3436; }
+      .ctx { stroke: #a8a29c; fill: #a8a29c; }
+      .hi { stroke: #fb923c; fill: #fb923c; }
+    }
+  </style>
+  <rect class="bg" width="840" height="422"/>
+  <text class="mono muted" x="40" y="44">COST PER TASK, PAIRED · GEOMETRIC MEAN · 95% INTERVAL</text>
+  <line class="rule" x1="331.4" y1="64" x2="331.4" y2="344" stroke-width="1"/>
+  <line class="rule" x1="392.9" y1="64" x2="392.9" y2="344" stroke-width="1"/>
+  <line class="rule" x1="454.3" y1="64" x2="454.3" y2="344" stroke-width="2"/>
+  <line class="rule" x1="515.7" y1="64" x2="515.7" y2="344" stroke-width="1"/>
+  <line class="rule" x1="577.1" y1="64" x2="577.1" y2="344" stroke-width="1"/>
+  <line class="rule" x1="638.6" y1="64" x2="638.6" y2="344" stroke-width="1"/>
+  <text class="mono muted" x="40" y="84">DEEPSEEK V4.1</text>
+  <text class="label ink" x="56" y="115">adam ÷ OpenCode</text>
+  <line class="hi" x1="543.6" y1="110" x2="637.7" y2="110" stroke-width="3" stroke-linecap="round"/>
+  <circle class="hi" cx="587.4" cy="110" r="6"/>
+  <text class="value ink" x="722" y="115">4.49× · n=7</text>
+  <text class="label ink" x="56" y="145">adam-lean ÷ OpenCode</text>
+  <line class="ctx" x1="512.6" y1="140" x2="577.4" y2="140" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="543.0" cy="140" r="6"/>
+  <text class="value ink" x="722" y="145">2.72× · n=9</text>
+  <text class="mono muted" x="40" y="182">MINIMAX M3</text>
+  <text class="label ink" x="56" y="213">adam ÷ OpenCode</text>
+  <line class="ctx" x1="324.0" y1="208" x2="548.3" y2="208" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="450.7" cy="208" r="6"/>
+  <text class="value ink" x="722" y="213">0.96× · n=3</text>
+  <text class="label ink" x="56" y="243">adam-lean ÷ OpenCode</text>
+  <line class="ctx" x1="356.0" y1="238" x2="431.1" y2="238" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="401.3" cy="238" r="6"/>
+  <text class="value ink" x="722" y="243">0.55× · n=4</text>
+  <text class="mono muted" x="40" y="280">GEMINI 3.1 FLASH-LITE</text>
+  <text class="label ink" x="56" y="311">adam ÷ OpenCode</text>
+  <line class="ctx" x1="503.4" y1="306" x2="593.7" y2="306" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="543.9" cy="306" r="6"/>
+  <text class="value ink" x="722" y="311">2.75× · n=10</text>
+  <text class="label ink" x="56" y="341">adam-lean ÷ OpenCode</text>
+  <line class="ctx" x1="489.0" y1="336" x2="556.3" y2="336" stroke-width="3" stroke-linecap="round"/>
+  <circle class="ctx" cx="522.5" cy="336" r="6"/>
+  <text class="value ink" x="722" y="341">2.16× · n=10</text>
+  <text class="value muted" x="331.4" y="374" text-anchor="middle">0.25×</text>
+  <text class="value muted" x="392.9" y="374" text-anchor="middle">0.5×</text>
+  <text class="value muted" x="454.3" y="374" text-anchor="middle">1×</text>
+  <text class="value muted" x="515.7" y="374" text-anchor="middle">2×</text>
+  <text class="value muted" x="577.1" y="374" text-anchor="middle">4×</text>
+  <text class="value muted" x="638.6" y="374" text-anchor="middle">8×</text>
+  <text class="mono muted" x="444.3" y="400" text-anchor="end">← CHEAPER THAN OPENCODE</text>
+  <text class="mono muted" x="464.3" y="400">DEARER →</text>
+</svg>
