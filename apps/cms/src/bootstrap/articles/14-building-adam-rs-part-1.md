@@ -167,10 +167,11 @@ config:
     height: 340
 ---
 xychart-beta
-    title "adam compared with OpenCode (OpenCode = 1)"
+    title "adam ÷ OpenCode: a better change, at about four times the cost"
     x-axis ["Review score", "Request size", "Cost per run", "Time per run"]
-    y-axis "times OpenCode" 0 --> 4.5
-    bar [1.3, 3.8, 4, 4]
+    y-axis "times OpenCode (line = OpenCode)" 0 --> 4.5
+    bar [0, 3.8, 4, 4]
+    bar [1.3, 0, 0, 0]
     line [1, 1, 1, 1]
 ```
 
