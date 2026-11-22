@@ -1,7 +1,5 @@
 import type { MetadataRoute } from 'next';
 
-import { getPosts, getProjects } from '@/lib/strapi';
-
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ssegning.com';
 
 const STATIC_ROUTES = [
@@ -17,45 +15,14 @@ const STATIC_ROUTES = [
 ];
 
 /**
- * Rendered per request, never cached.
+ * The site's own pages. Articles and case studies are in the content sitemap
+ * the CMS builds (`/sitemap-content.xml`, app/sitemap-content.xml/route.ts),
+ * with the date each last changed; listing them here too would give crawlers
+ * a second, less accurate date for the same URLs. robots.txt lists both.
  *
- * This used to be ISR with `revalidate = 60`, which is wrong for a sitemap in
- * this setup for two compounding reasons. The build runs in CI with no Strapi
- * reachable, so the version baked into the image lists the hand-written
- * fallback articles instead of the real ones. And `web` runs 2 replicas whose
- * ISR caches are per-pod, so after every deploy each pod independently serves
- * that baked copy until its own first revalidation — two clients fetching
- * /sitemap.xml seconds apart got different documents, one of them listing
- * articles that do not exist in the CMS.
- *
- * A sitemap is fetched by crawlers a handful of times a day, so paying one
- * Strapi call per request to always tell the truth is the right trade.
+ * No `lastModified`: nothing here knows when a hand-built page last changed,
+ * and a date that moves on every request is worse than none.
  */
-export const dynamic = 'force-dynamic';
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Deliberately NOT falling back to `@/content/fallback` when Strapi is
-  // unreachable, the way the rendered pages do. A page falling back shows a
-  // visitor something instead of an error; a sitemap falling back publishes a
-  // list of URLs to search engines and asserts they exist. The fallback slugs
-  // are not in the CMS, so that assertion is false. If Strapi is down, the
-  // honest sitemap is the static routes alone.
-  const [projectList, postList] = await Promise.all([getProjects(), getPosts()]);
-
-  const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((path) => ({
-    url: `${SITE_URL}${path}`,
-    lastModified: new Date(),
-  }));
-
-  const projectEntries: MetadataRoute.Sitemap = projectList.map((project) => ({
-    url: `${SITE_URL}/work/${project.slug}`,
-    lastModified: new Date(),
-  }));
-
-  const postEntries: MetadataRoute.Sitemap = postList.map((post) => ({
-    url: `${SITE_URL}/journal/${post.slug}`,
-    lastModified: post.publishedAt ? new Date(post.publishedAt) : new Date(),
-  }));
-
-  return [...staticEntries, ...projectEntries, ...postEntries];
+export default function sitemap(): MetadataRoute.Sitemap {
+  return STATIC_ROUTES.map((path) => ({ url: `${SITE_URL}${path}` }));
 }
