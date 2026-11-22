@@ -5,14 +5,14 @@ import { Container } from '@/components/container';
 import { LinkButton } from '@/components/link-button';
 import { Markdown } from '@/components/markdown';
 import { Section } from '@/components/section';
-import { contactPage as fallbackContactPage } from '@/content/fallback';
 import { getContactPage } from '@/lib/strapi';
 
-// Explicit ISR: the Strapi fetch helpers (src/lib/strapi.ts) swallow every fetch error into null/[], so Next never sees a completed fetch here to infer revalidation from on its own.
+// ISR: regenerate at most once a minute. A regeneration that throws (the CMS
+// did not answer, see CmsUnavailableError) keeps the last good copy.
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const contact = (await getContactPage()) ?? fallbackContactPage;
+  const contact = await getContactPage();
   return {
     title: 'Contact',
     description: contact.seo?.metaDescription ?? contact.headline ?? 'Get in touch.',
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactPage() {
-  const page = (await getContactPage()) ?? fallbackContactPage;
+  const page = await getContactPage();
 
   return (
     <Section divider={false} className="pt-16 md:pt-24">

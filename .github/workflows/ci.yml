@@ -55,6 +55,11 @@ jobs:
         run: pnpm --filter './packages/*' build
 
       - name: Smoke build apps/web
+        # The site has no hand-written fallback: every page needs the CMS to
+        # render, and the build fails without it. Same public CMS the image
+        # build reads (see apps/web/Dockerfile).
+        env:
+          STRAPI_URL: https://cms.ssegning.com
         run: pnpm --filter @ssegning/web build
 
   images:

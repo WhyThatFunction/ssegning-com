@@ -29,14 +29,15 @@ function strapiBaseUrl(): string | null {
  * its last good copy: Next.js only replaces the cached page when a render
  * succeeds. Answering `notFound()` instead would cache a 404 for a real
  * article for a whole revalidation window, which is what happened on every
- * deploy while the web pods came up before Strapi did. A first render with no
+ * deploy while the web pods came up before Strapi did; a hand-written fallback
+ * would likewise be cached in place of the real page. A first render with no
  * good copy yet gets a bare 500 ("Internal Server Error", not app/error.tsx),
  * which is not cached and tells a crawler to come back later rather than that
  * the URL is gone.
  */
 export class CmsUnavailableError extends Error {
   constructor(what: string) {
-    super(`The CMS did not answer while loading ${what}`);
+    super(`The CMS gave no usable answer for ${what}`);
     this.name = 'CmsUnavailableError';
   }
 }
@@ -50,40 +51,88 @@ type StrapiResult<T> = { ok: true; body: T } | { ok: false };
  * Hard requirement: this NEVER throws. Any failure — no STRAPI_URL
  * configured, network error, non-2xx response, malformed JSON, or a request
  * that exceeds the timeout — resolves to `{ ok: false }` so every call site
- * can fail soft instead of crashing the page.
+ * decides what no answer means: the slug lookups tell it apart from "no such
+ * record", and everything else throws `CmsUnavailableError`.
  *
  * It reports whether the CMS *answered*, separately from what it said,
  * because those are different facts to a caller looking up one record: an
  * empty answer means "no such record", an absent answer means "ask again
- * later". `strapiFetchData` below is for the callers that genuinely do not
- * need to tell them apart.
+ * later".
  */
 async function strapiFetch<T>(path: string, tags: string[]): Promise<StrapiResult<T>> {
   const base = strapiBaseUrl();
   if (!base) return { ok: false };
 
-  try {
-    const response = await fetch(`${base}${path}`, {
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
-    });
-
-    if (!response.ok) return { ok: false };
-
-    return { ok: true, body: (await response.json()) as T };
-  } catch {
-    return { ok: false };
+  for (let attempt = 0; ; attempt++) {
+    const { result, retryable } = await strapiFetchOnce<T>(`${base}${path}`, tags, attempt);
+    if (result.ok || !retryable || attempt >= RETRY_DELAYS_MS.length) return result;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
   }
 }
 
 /**
- * `strapiFetch` for callers that treat "CMS down" and "CMS said nothing" the
- * same way — every single-type page, which falls back to hand-written copy
- * either way because there is no URL to be wrong about.
+ * Pauses before each retry of a failure that is likely to pass on its own: a
+ * dropped connection, a timeout, a 5xx or a 429. Without them one blip among
+ * the dozens of requests a build makes fails the whole build, now that
+ * nothing falls back. The 1 s and 3 s pauses ride out a short CMS restart
+ * (a CI smoke build failed during one with 300 ms and 1 s); a CMS that stays
+ * down still throws after the third attempt. Other 4xx answers are not
+ * retried: asking again would get the same answer.
  */
-async function strapiFetchData<T>(path: string, tags: string[]): Promise<T | null> {
+const RETRY_DELAYS_MS = [1_000, 3_000];
+
+async function strapiFetchOnce<T>(
+  url: string,
+  tags: string[],
+  attempt: number,
+): Promise<{ result: StrapiResult<T>; retryable: boolean }> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      // Next.js memoizes identical fetches within a render, so a retry with
+      // the same URL and options would get the first attempt's failure back
+      // without touching the network. The header makes each retry its own
+      // request; Strapi ignores it.
+      headers: attempt > 0 ? { 'x-retry-attempt': String(attempt) } : undefined,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
+    });
+  } catch {
+    return { result: { ok: false }, retryable: true };
+  }
+
+  if (!response.ok) {
+    return { result: { ok: false }, retryable: response.status === 429 || response.status >= 500 };
+  }
+
+  try {
+    return { result: { ok: true, body: (await response.json()) as T }, retryable: false };
+  } catch {
+    return { result: { ok: false }, retryable: false };
+  }
+}
+
+/**
+ * `strapiFetch` for callers that need the answer to render at all: every
+ * index and single-type page. No answer throws `CmsUnavailableError`, so a
+ * regeneration during an outage keeps the last good copy rather than
+ * replacing it with something the CMS never said.
+ */
+async function strapiFetchData<T>(path: string, tags: string[], what: string): Promise<T> {
   const result = await strapiFetch<T>(path, tags);
-  return result.ok ? result.body : null;
+  if (!result.ok) throw new CmsUnavailableError(what);
+  return result.body;
+}
+
+/**
+ * A single type's record, or `CmsUnavailableError`. Strapi answers an unset or
+ * unpublished single type with `data: null`; every page that reads one has
+ * nothing to show without it, so that is treated like no answer.
+ */
+async function strapiFetchSingle<T>(path: string, tags: string[], what: string): Promise<T> {
+  const json = await strapiFetchData<StrapiSingleResponse<T>>(path, tags, what);
+  if (!json?.data) throw new CmsUnavailableError(what);
+  return json.data;
 }
 
 /**
@@ -93,7 +142,7 @@ async function strapiFetchData<T>(path: string, tags: string[]): Promise<T | nul
  */
 const STRAPI_MAX_PAGE_SIZE = 100;
 
-/** Belt-and-braces stop so a bad `pageCount` can never spin this forever. */
+/** Belt-and-braces stop so a bad `pageCount` can never spin this forever; hitting it throws. */
 const MAX_PAGES = 50;
 
 /**
@@ -106,78 +155,85 @@ const MAX_PAGES = 50;
  * content-loss bug on a site whose article count only grows, so paging is
  * done here once rather than left to each caller to remember.
  *
- * Keeps `strapiFetch`'s contract: never throws. A failed page resolves to
- * `null` and this returns whatever it had, so a partial outage degrades to
- * fewer entries instead of an exception.
+ * All or nothing: a page that fails, or answers without a `data` list, throws
+ * `CmsUnavailableError`. A partial list would be cached as if it were the
+ * whole one, quietly dropping entries from the index and the sitemap.
  *
  * `path` must already carry its own query string (every caller sorts and/or
  * populates), so pagination is appended with `&`.
  */
-async function strapiFetchAll<T>(path: string, tags: string[]): Promise<T[]> {
+async function strapiFetchAll<T>(path: string, tags: string[], what: string): Promise<T[]> {
   const collected: T[] = [];
 
   for (let page = 1; page <= MAX_PAGES; page++) {
     const json = await strapiFetchData<StrapiListResponse<T>>(
       `${path}&pagination[page]=${page}&pagination[pageSize]=${STRAPI_MAX_PAGE_SIZE}`,
       tags,
+      what,
     );
 
-    if (!json?.data?.length) break;
+    if (!Array.isArray(json?.data)) throw new CmsUnavailableError(what);
+    if (json.data.length === 0) return collected;
     collected.push(...json.data);
 
     const pageCount = json.meta?.pagination?.pageCount;
-    // No `pageCount` (withCount off, or an unexpected shape) means there is
-    // nothing reliable to loop on — stop rather than guess at a next page.
-    if (pageCount === undefined || page >= pageCount) break;
+    if (pageCount === undefined) {
+      // Without a page count, a short page is the only proof this was the last.
+      if (json.data.length < STRAPI_MAX_PAGE_SIZE) return collected;
+      throw new CmsUnavailableError(`${what} (no page count on a full page)`);
+    }
+    if (page >= pageCount) return collected;
   }
 
-  return collected;
+  throw new CmsUnavailableError(`${what} (more than ${MAX_PAGES} pages)`);
 }
 
-export async function getSiteSetting(): Promise<SiteSetting | null> {
-  const json = await strapiFetchData<StrapiSingleResponse<SiteSetting>>(
+export async function getSiteSetting(): Promise<SiteSetting> {
+  return strapiFetchSingle<SiteSetting>(
     '/api/site-setting?populate=*',
     ['site-setting'],
+    'the site setting',
   );
-  return json?.data ?? null;
 }
 
-export async function getHomePage(): Promise<HomePage | null> {
-  const json = await strapiFetchData<StrapiSingleResponse<HomePage>>('/api/home-page?populate=*', [
-    'home-page',
-  ]);
-  return json?.data ?? null;
+export async function getHomePage(): Promise<HomePage> {
+  return strapiFetchSingle<HomePage>('/api/home-page?populate=*', ['home-page'], 'the home page');
 }
 
-export async function getAboutPage(): Promise<AboutPage | null> {
-  const json = await strapiFetchData<StrapiSingleResponse<AboutPage>>(
+export async function getAboutPage(): Promise<AboutPage> {
+  return strapiFetchSingle<AboutPage>(
     '/api/about-page?populate=*',
     ['about-page'],
+    'the about page',
   );
-  return json?.data ?? null;
 }
 
-export async function getContactPage(): Promise<ContactPage | null> {
-  const json = await strapiFetchData<StrapiSingleResponse<ContactPage>>(
+export async function getContactPage(): Promise<ContactPage> {
+  return strapiFetchSingle<ContactPage>(
     '/api/contact-page?populate=*',
     ['contact-page'],
+    'the contact page',
   );
-  return json?.data ?? null;
 }
 
-export async function getLegalPage(): Promise<LegalPage | null> {
-  const json = await strapiFetchData<StrapiSingleResponse<LegalPage>>('/api/legal-page', [
-    'legal-page',
-  ]);
-  return json?.data ?? null;
+export async function getLegalPage(): Promise<LegalPage> {
+  return strapiFetchSingle<LegalPage>('/api/legal-page', ['legal-page'], 'the legal page');
 }
 
 export async function getServices(): Promise<Service[]> {
-  return strapiFetchAll<Service>('/api/services?sort=order:asc&populate=*', ['services']);
+  return strapiFetchAll<Service>(
+    '/api/services?sort=order:asc&populate=*',
+    ['services'],
+    'the services list',
+  );
 }
 
 export async function getProjects(): Promise<Project[]> {
-  return strapiFetchAll<Project>('/api/projects?sort=order:asc&populate=*', ['projects']);
+  return strapiFetchAll<Project>(
+    '/api/projects?sort=order:asc&populate=*',
+    ['projects'],
+    'the projects list',
+  );
 }
 
 export async function getProjectBySlug(slug: string): Promise<Lookup<Project>> {
@@ -195,7 +251,11 @@ export async function getProjectBySlug(slug: string): Promise<Lookup<Project>> {
 }
 
 export async function getPosts(): Promise<Post[]> {
-  return strapiFetchAll<Post>('/api/posts?sort=publishedAt:desc&populate=*', ['posts']);
+  return strapiFetchAll<Post>(
+    '/api/posts?sort=publishedAt:desc&populate=*',
+    ['posts'],
+    'the posts list',
+  );
 }
 
 export async function getPostBySlug(slug: string): Promise<Lookup<Post>> {

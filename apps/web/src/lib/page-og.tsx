@@ -1,4 +1,3 @@
-import { siteSetting as fallbackSiteSetting } from '@/content/fallback';
 import { getSiteSetting } from '@/lib/strapi';
 
 import { renderBanner } from './article-banner';
@@ -25,7 +24,7 @@ export async function renderPageOg({
   seed: string;
   subtitle?: string | null;
 }) {
-  const siteSetting = (await getSiteSetting()) ?? fallbackSiteSetting;
+  const siteSetting = await getSiteSetting();
 
   return renderBanner({
     title,

@@ -7,8 +7,7 @@ React 19, TypeScript, Tailwind CSS v4.
 Content (home page, services, case studies, journal posts, about/contact/
 legal copy) is served by the sibling `apps/cms` Strapi instance. This app
 reads it anonymously over the public REST API — there is no Strapi API
-token — and renders fully even when Strapi is unreachable or empty, falling
-back to the hand-written copy in `src/content/fallback.ts`.
+token. There is no hand-written fallback copy: see "Resilience" below.
 
 See `DESIGN.md` in this directory for the design research, reference lock,
 and token decisions behind the UI.
@@ -21,8 +20,9 @@ pnpm --filter @ssegning/web dev
 ```
 
 Requires Node >=22. Copy `.env.example` to `.env.local` and point
-`STRAPI_URL` at a running Strapi instance (see `apps/cms`), or leave it
-pointed at nothing to develop entirely against the fallback content.
+`STRAPI_URL` at a running Strapi instance (see `apps/cms`), or at the public
+read API `https://cms.ssegning.com`. Without a reachable CMS, pages and the
+build fail.
 
 ## Scripts
 
@@ -35,7 +35,7 @@ pointed at nothing to develop entirely against the fallback content.
 
 | Variable | Required | Description |
 |---|---|---|
-| `STRAPI_URL` | yes (server-side) | Base URL of the Strapi CMS, e.g. `http://ssegning-cms:1337` in-cluster. Every fetch fails soft to `null`/`[]` if this is unset, unreachable, or times out (8s), so the site still renders. |
+| `STRAPI_URL` | yes (server-side) | Base URL of the Strapi CMS, e.g. `http://ssegning-cms:1337` in-cluster. If it is unset, unreachable, or times out (8s), pages throw `CmsUnavailableError`: a cached page keeps its last good copy, an uncached one answers 500. |
 | `NEXT_PUBLIC_SITE_URL` | yes | Canonical public origin, e.g. `https://ssegning.com`. Used for metadata, `sitemap.xml`, and `robots.txt`. |
 | `REVALIDATE_SECRET` | yes | Shared secret checked against the `x-revalidate-secret` header on `POST /api/revalidate`. Must equal the CMS's `WEB_REVALIDATE_SECRET`. |
 | `GISCUS_REPO` | no | `owner/repo` hosting the comment Discussions, e.g. `WhyThatFunction/ssegning-com`. Read server-side in `app/journal/[slug]/page.tsx`. |
@@ -52,27 +52,32 @@ See `.env.example` for a ready-to-copy template.
 
 ## Resilience
 
-`src/lib/strapi.ts` is the only module allowed to talk to Strapi. Every
-helper there wraps its `fetch` in try/catch and returns `null` (single
-content types) or `[]` (collections) on any failure — network error,
-non-2xx status, malformed JSON, or the 8-second timeout. Pages combine that
-result with `src/content/fallback.ts` (`data ?? fallback`), so a cold or
-down CMS renders full pages with realistic default copy instead of a 500 or
-a blank screen.
+`src/lib/strapi.ts` is the only module allowed to talk to Strapi. A request
+that fails (network error, non-2xx status, malformed JSON, the 8-second
+timeout, or a body without the expected `data`) makes the page throw
+`CmsUnavailableError`. There is deliberately no hand-written fallback copy:
+under ISR a fallback is cached like a real page, so a CMS restart used to
+replace real articles with placeholder ones (and a real article with a 404)
+for a whole revalidation window.
+
+What a reader sees instead:
+
+- A page already rendered on this pod keeps its last good copy. Next.js only
+  replaces a cached page when a render succeeds; a failed regeneration retries
+  after 30 seconds.
+- A page this pod has never rendered answers a bare 500, which is not cached
+  and tells a crawler to come back.
+- The build prerenders every page against the CMS, so a new pod starts with
+  good copies of all of them, and the build fails if the CMS cannot be read.
+
+A slug lookup tells "the CMS answered and has no such record" (404) apart
+from "the CMS did not answer" (the error above).
 
 **Every route that reads CMS content also declares its own
 `export const revalidate = 60`** (see `app/page.tsx`, `app/journal/page.tsx`,
 `app/journal/[slug]/page.tsx`, `app/about/page.tsx`, `app/contact/page.tsx`,
-`app/work/page.tsx`, `app/work/[slug]/page.tsx`, `app/legal/*/page.tsx`,
-`sitemap.ts`). This is not redundant with the `revalidate`/`tags` options
-already passed to `fetch` in `strapi.ts` — it's what stops the Docker build
-from baking a route as **permanently static**. The production image is
-built in CI, which has no Strapi to talk to, so every fetch during that
-build resolves via the fail-soft path above with nothing revalidatable
-recorded. Without the route-level `revalidate` export, Next has no other
-signal and treats the route as static forever, serving fallback copy
-indefinitely even once the CMS is reachable in the running cluster. If you
-add a new page that reads `strapi.ts`, it needs this export too.
+`app/work/page.tsx`, `app/work/[slug]/page.tsx`, `app/legal/*/page.tsx`).
+If you add a new page that reads `strapi.ts`, it needs this export too.
 
 `GET /api/healthz` never touches Strapi — it only reports this app's own
 liveness.

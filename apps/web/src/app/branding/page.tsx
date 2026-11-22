@@ -12,10 +12,9 @@ export const metadata: Metadata = {
     'The ssegning.com brand mark, color palette, typography scale, and usage guidelines — mark variants, clear space, and misuse examples.',
 };
 
-// This page reads no CMS data (unlike the rest of the site, which sets
-// `revalidate = 60` because the Strapi fetch helpers swallow errors into
-// null/[] and Next can't infer a revalidation window from that). Everything
-// here is hand-authored reference content, so it's fully static.
+// The page body is hand-authored reference content and reads no CMS data.
+// The root layout around it still reads the site settings, so the page
+// regenerates with them like every other route.
 export const dynamic = 'force-static';
 
 const MARK_SOURCE = `<svg viewBox="0 0 64 64" fill="currentColor" xmlns="http://www.w3.org/2000/svg">

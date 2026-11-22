@@ -10,29 +10,23 @@ import { Section } from '@/components/section';
 import { SectionHeading } from '@/components/section-heading';
 import { ServiceCard } from '@/components/service-card';
 import { StatusLine } from '@/components/status-line';
-import {
-  homePage as fallbackHomePage,
-  posts as fallbackPosts,
-  projects as fallbackProjects,
-  services as fallbackServices,
-} from '@/content/fallback';
 import { getHomePage, getPosts, getProjects, getServices } from '@/lib/strapi';
 
-// Explicit ISR: the Strapi fetch helpers (src/lib/strapi.ts) swallow every fetch error into null/[], so Next never sees a completed fetch here to infer revalidation from on its own.
+// ISR: regenerate at most once a minute. A regeneration that throws (the CMS
+// did not answer, see CmsUnavailableError) keeps the last good copy.
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [home, services, projects, posts] = await Promise.all([
+  const [page, services, projects, posts] = await Promise.all([
     getHomePage(),
     getServices(),
     getProjects(),
     getPosts(),
   ]);
 
-  const page = home ?? fallbackHomePage;
-  const featuredServices = (services.length > 0 ? services : fallbackServices).slice(0, 4);
-  const featuredProjects = (projects.length > 0 ? projects : fallbackProjects).slice(0, 3);
-  const featuredPosts = (posts.length > 0 ? posts : fallbackPosts).slice(0, 2);
+  const featuredServices = services.slice(0, 4);
+  const featuredProjects = projects.slice(0, 3);
+  const featuredPosts = posts.slice(0, 2);
 
   return (
     <>

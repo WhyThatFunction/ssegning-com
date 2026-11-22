@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { ServiceWorker } from '@/components/service-worker';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
-import { siteSetting as fallbackSiteSetting } from '@/content/fallback';
 import { getSiteSetting } from '@/lib/strapi';
 
 import './globals.css';
@@ -42,7 +41,7 @@ const THEME_INIT_SCRIPT = `
 `;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteSetting = (await getSiteSetting()) ?? fallbackSiteSetting;
+  const siteSetting = await getSiteSetting();
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -66,7 +65,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const siteSetting = (await getSiteSetting()) ?? fallbackSiteSetting;
+  const siteSetting = await getSiteSetting();
 
   return (
     <html

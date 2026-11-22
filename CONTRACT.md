@@ -166,9 +166,16 @@ Strapi 5 flattens: response is { data: {...fields}, meta } — no `attributes` w
 - web: `GET /api/healthz` -> 200 `{"status":"ok"}` (must NOT touch Strapi)
 
 ## Resilience requirement
-apps/web MUST render every page even when Strapi is unreachable or empty:
-every fetch helper returns `null`/`[]` on error and pages fall back to
-hard-coded default copy. A cold cluster must never show a 500.
+apps/web MUST NOT replace real content with anything the CMS did not say.
+There is no hard-coded fallback copy: under ISR it is cached like a real page.
+When Strapi gives no usable answer, the page throws `CmsUnavailableError`
+(`apps/web/src/lib/strapi.ts`), so:
+- a page already rendered keeps serving its last good copy (Next.js only
+  replaces a cached page when a render succeeds);
+- a page never rendered on that pod answers 500 (uncached), never 404;
+- a slug lookup answers 404 only when the CMS answered and has no such record;
+- the build, which prerenders every page against the CMS, fails if the CMS
+  cannot be read, so every new pod starts with good copies of every page.
 
 ## ADDENDUM 1 — Strapi super-admin bootstrap (added after initial dispatch)
 
